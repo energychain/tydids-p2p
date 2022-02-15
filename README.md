@@ -141,7 +141,6 @@ presentation[key] = value;
 await ssi.updateVP(address,presentation);
 ```
 
-
 ## Maintainer / Imprint
 
 <addr>

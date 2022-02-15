@@ -4,7 +4,7 @@
 
 tasks:
   - init: npm install
-    command: npm install -g;tydids -h
+    command: node cli.js -h
 vscode:
   extensions:
     - dbaeumer.vscode-eslint

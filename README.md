@@ -2,7 +2,7 @@
 
 <a href="https://stromdao.de/" target="_blank" title="STROMDAO - Digital Energy Infrastructure"><img src="./static/stromdao.png" align="right" height="85px" hspace="30px" vspace="30px"></a>
 
-**A consensus driven decentralized data governance framework. **
+**A consensus driven decentralized data governance framework.**
 
 [![npm](https://img.shields.io/npm/dt/tydids-p2p.svg)](https://www.npmjs.com/package/tydids-p2p)
 [![npm](https://img.shields.io/npm/v/tydids-p2p.svg)](https://www.npmjs.com/package/tydids-p2p)

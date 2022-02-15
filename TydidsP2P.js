@@ -1,13 +1,7 @@
 const ethers = require("ethers");
-const Gun = require('gun');
-const EthCrypto = require("eth-crypto");
-const EthrDID = require("ethr-did").EthrDID;
-const Resolver = require('did-resolver').Resolver;
-const getResolver = require('ethr-did-resolver').getResolver;
 const https = require("https");
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-const MasterGun = Gun({peers: ["https://webrtc.tydids.com/gun"]});
 const EventEmitter = require('events');
 
 const _encryptWithPublicKey = async function(publicKey,data) {
@@ -24,16 +18,22 @@ const _decryptWithPrivateKey = async function(privateKey,data) {
 
 const TydidsP2P = {
   ethers:ethers,
-  Gun:MasterGun,
   _encryptWithPublicKey:_encryptWithPublicKey,
   _decryptWithPrivateKey:_decryptWithPrivateKey,
   ssi:async function(privateKey,gun) {
+
+    const EthrDID = require("ethr-did").EthrDID;
+    const getResolver = require('ethr-did-resolver').getResolver;
+    const Resolver = require('did-resolver').Resolver;
+    const EthCrypto = require("eth-crypto");
+
     const config = {
       rpcUrl: "https://rpc.tydids.com/",
       name: "mainnet",
       chainId: "6226",
       registry:"0xaC2DDf7488C1C2Dd1f8FFE36e207D8Fb96cF2fFB",
-      abi:require("./EthereumDIDRegistry.abi.json")
+      abi:require("./EthereumDIDRegistry.abi.json"),
+      gunPeers:['https://webrtc.tydids.com/gun']
     }
 
     class Events extends EventEmitter {
@@ -84,8 +84,15 @@ const TydidsP2P = {
     const provider = new ethers.providers.JsonRpcProvider(config.rpcUrl);
     const wallet = new ethers.Wallet(privateKey,provider);
     const singingKey = new ethers.utils.SigningKey(privateKey);
+
     if((typeof gun == 'undefined') || (gun == null)) {
-      gun = MasterGun;
+      const Gun = require('gun');
+      gun = Gun({peers:config.gunPeers});
+      if(typeof gun.user == 'undefined') {
+        if(typeof SEA !== 'undefined') {
+          gun.user = SEA.GUN.User;
+        }
+      }
     }
     const user = gun.user();
     const emitter = new Events();

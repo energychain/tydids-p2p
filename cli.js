@@ -3,7 +3,7 @@ const out = console.log;
 
 console.log = function() {}
 
-const tydids = require("./lib/TydidsP2P.js");
+const tydids = require("./TydidsP2P.js");
 
 const { program } = require('commander');
 

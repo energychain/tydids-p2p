@@ -47,6 +47,9 @@ const app = async function() {
     if(typeof options.verbose !== 'undefined') outputPresentation.true;
 
     if(outputPresentation) {
+      ssi.emitter.on('did:ethr:6226:'+options.presentation,function(data) {
+        out(presentation);
+      });
       out(presentation);
     }
   }

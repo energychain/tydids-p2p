@@ -1,0 +1,48 @@
+{
+  "name": "tydids-p2p",
+  "version": "0.5.1",
+  "description": "A consensus driven decentralized data governance framework.",
+  "main": "lib/TydidsP2P.js",
+  "bin": {
+    "tydids":"./cli.js"
+  },
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "mocha --exit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/energychain/tydids-p2p.git"
+  },
+  "keywords": [
+    "decentralized",
+    "peer-to-peer",
+    "self-sovereign-identity",
+    "did",
+    "identity",
+    "ssi",
+    "edge"
+  ],
+  "author": "STROMDAO GmbH <dev@stromdao.com>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/energychain/tydids-p2p/issues"
+  },
+  "homepage": "https://github.com/energychain/tydids-p2p#readme",
+  "dependencies": {
+    "@peculiar/webcrypto": "^1.2.3",
+    "commander": "^9.0.0",
+    "did-resolver": "^3.1.5",
+    "eth-crypto": "^2.2.0",
+    "ethers": "^5.5.4",
+    "ethr-did": "^2.2.0",
+    "ethr-did-resolver": "^5.0.4",
+    "gun": "^0.2020.1235"
+  },
+  "devDependencies": {
+    "browserify": "^17.0.0",
+    "mocha": "^9.2.0"
+  }
+}

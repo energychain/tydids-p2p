@@ -1,0 +1,4 @@
+cmd: npm start
+targets:
+  build-dist:
+    cmd: "npm run build"

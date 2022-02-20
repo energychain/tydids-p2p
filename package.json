@@ -1,14 +1,15 @@
 {
   "name": "tydids-p2p",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "A consensus driven decentralized data governance framework.",
   "main": "./TydidsP2P.js",
   "bin": {
     "tydids": "./cli.js"
   },
   "scripts": {
+    "cli": "node cli.js",
     "test": "mocha --exit",
-    "build": "node_modules/.bin/browserify -s TydidsP2P -o dist/TydidsP2P.js ./TydidsP2P.js"
+    "build": "node_modules/.bin/browserify -s TydidsP2P -o ./dist/TydidsP2P.js ./TydidsP2P.js"
   },
   "repository": {
     "type": "git",
@@ -41,11 +42,13 @@
     "gun": "^0.2020.1235",
     "http-browserify": "^1.7.0",
     "https-browserify": "^1.0.0",
+    "jsontokens": "^3.0.0",
     "stream-browserify": "^3.0.0",
     "webpack": "^5.69.0"
   },
   "devDependencies": {
     "browserify": "^17.0.0",
-    "mocha": "^9.2.0"
+    "mocha": "^9.2.0",
+    "uglifyify": "^5.0.2"
   }
 }

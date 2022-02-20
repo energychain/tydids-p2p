@@ -1,6 +1,8 @@
 const ethers = require("ethers");
 const https = require("https");
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+const EthCrypto = require("eth-crypto");
+const jsontokens = require("jsontokens");
 
 const EventEmitter = require('events');
 
@@ -17,6 +19,7 @@ const _decryptWithPrivateKey = async function(privateKey,data) {
 }
 
 const TydidsP2P = {
+  jsontokens:jsontokens,
   ethers:ethers,
   _encryptWithPublicKey:_encryptWithPublicKey,
   _decryptWithPrivateKey:_decryptWithPrivateKey,
@@ -25,7 +28,6 @@ const TydidsP2P = {
     const EthrDID = require("ethr-did").EthrDID;
     const getResolver = require('ethr-did-resolver').getResolver;
     const Resolver = require('did-resolver').Resolver;
-    const EthCrypto = require("eth-crypto");
 
     const config = {
       rpcUrl: "https://rpc.tydids.com/",
@@ -146,7 +148,10 @@ const TydidsP2P = {
         const did = await ethrDid.verifyJWT(jwt, didResolver);
         return did;
       } catch(e) {
-        console.log('_resolveDid',e);
+        console.log('_resolveDid - Master Caution');
+        // try offline without Resolver!
+        let res = jsontokens.decodeToken(jwt)
+        return res;
       }
     }
 
@@ -191,18 +196,20 @@ const TydidsP2P = {
 
     const _devFunding = function(account) {
       return new Promise(async function(resolve, reject) {
+      try {
+        console.log('Ensure Funding',account);
          let balance = await provider.getBalance(account);
          if(balance < 2023100000000000) {
-           try {
                https.get('https://api.corrently.io/v2.0/idideal/devmode?account='+account,function(res) {
                   resolve(res);
                });
-           } catch(e) {
-             console.log('_devFunding()',e);
-           }
          } else {
            resolve(balance);
          }
+       } catch(e) {
+         console.log('_devFunding()',e);
+         resolve();
+       }
       });
     }
 
@@ -216,7 +223,7 @@ const TydidsP2P = {
           publicKey:EthCrypto.publicKeyByPrivateKey(tmpPrivateKey),
           privateKey:tmpPrivateKey
         }
-
+        emitter.emit("cMP","Created new DID address: "+tmpWallet.address);
         const mcIdentity = {
           id:"did:ethr:6226:"+mcKeys.address,
           address:mcKeys.address,
@@ -227,23 +234,56 @@ const TydidsP2P = {
        const _wallet =  new ethers.Wallet(mcKeys.privateKey,provider);
        const registry = new ethers.Contract( config.registry , config.abi , _wallet );
        await _publishIdentity(mcIdentity);
-
+        emitter.emit("cMP","Public Announced Identity: "+mcIdentity.address);
        // We need to wait for Funds here!
-       await wallet.sendTransaction({
-         to: mcIdentity.address,
-         value: ethers.utils.parseEther("0.001")
-       });
 
-       let balance = await provider.getBalance(mcIdentity.address);
-       while(balance < 100) {
-          await sleep(500);
-          balance = await provider.getBalance(mcIdentity.address);
+       const doOwnerChange = async function() {
+         emitter.emit("cMP","Assign Ownership to: "+identity.address);
+         try {
+            emitter.emit("cMP","Ensure Funding");
+           await _devFunding(mcIdentity.address);
+           await sleep(500);
+           await wallet.sendTransaction({
+             to: mcIdentity.address,
+             value: ethers.utils.parseEther("0.001")
+           });
+           emitter.emit("cMP","Transfer Funding");
+           let balance = await provider.getBalance(mcIdentity.address);
+           while(balance < 100) {
+              await sleep(500);
+              balance = await provider.getBalance(mcIdentity.address);
+           }
+            emitter.emit("cMP","Consensus Transaction: Change Ownership");
+           const res = await registry.changeOwner(_wallet.address,identity.address);
+         } catch(e) {
+           setTimeout(function() {
+             console.log("Pending DID Owner Change!");
+             doOwnerChange();
+           },1000);
+         }
        }
-       const res = await registry.changeOwner(_wallet.address,identity.address);
-       await sleep(500);
+       emitter.emit("cMP","Event Subscribe to new Presentation address");
+       await doOwnerChange();
+       // Wait to get verified Ownership
+       let nOwner = await identityOwner(mcIdentity.address);
+       while(nOwner !== identity.address) {
+         emitter.emit("cMP","Wait for Consensus of Ownership");
+         sleep(3500);
+         nOwner = await identityOwner(mcIdentity.address);
+       }
        const encCred = await _encryptWithPublicKey(identity.publicKey,mcKeys.privateKey);
        try {
          gun.get(identity.address).get("ManagedCredentials").get(mcIdentity.address).put(await _buildJWTDid({private:encCred}));
+         emitter.emit("cMP","Published to Managed Credentials");
+         _managedCredentials[mcIdentity.address] = {
+           id:"did:ethr:6226:"+mcIdentity.address,
+           address:mcIdentity.address,
+           privateKey:mcKeys.privateKey,
+           publicKey:mcKeys.publicKey,
+           owner:mcIdentity.address,
+           belongsThis:true,
+           delegateThis:true
+         }
        } catch(e) {
          console.log('createManagedPresentation():identity',e);
        }
@@ -327,14 +367,19 @@ const TydidsP2P = {
     }
 
     const retrieveDelegationVP = async function(address) {
-      if(typeof _managedCredentials[address] == 'undefined') throw "ManageCredential not available so far";
-      try {
-        const node = gun.get("did:ethr:6226:"+address+":delegates").get("did");
-        const data = await _onceWithEncryption(node);
-        const did = await _resolveDid(await _decryptWithPrivateKey(_managedCredentials[address].privateKey,data));
-        return did.payload;
-      } catch(e) {
-        console.log("retrieveDelegationVP",e);
+      if(typeof _managedCredentials[address] == 'undefined') {
+        discoverManagedCredentials();
+        setInterval(discoverManagedCredentials,5000);
+        await waitManagedCredentials();
+      } else {
+        try {
+          const node = gun.get("did:ethr:6226:"+address+":delegates").get("did");
+          const data = await _onceWithEncryption(node);
+          const did = await _resolveDid(await _decryptWithPrivateKey(_managedCredentials[address].privateKey,data));
+          return did.payload;
+        } catch(e) {
+          console.log("retrieveDelegationVP",e);
+        }
       }
     }
 
@@ -353,7 +398,7 @@ const TydidsP2P = {
           try {
               const encJWT = await _buildJWTDid({private:encCred});
               gun.get(to).get("ManagedCredentials").get(_identity).put(encJWT);
-              gut.get(_identity).get(to).put(encJWT);
+              gun.get(_identity).get(to).put(encJWT);
 
           } catch(e) {
               console.log('delegate():identity',e);
@@ -388,25 +433,28 @@ const TydidsP2P = {
       gun.get(identity.address).get("AddressBook").put(await _buildJWTDid({aliases:encDid}));
     }
 
-    gun.get(identity.address).get("ManagedCredentials").map().on(async function(v,k) {
-        _managedCredentials[k] = await _resolveDid(v);
-        const pk = await _decryptWithPrivateKey(keys.privateKey,_managedCredentials[k].payload.private);
-        const owner = await identityOwner(k);
-        let belongsThis = false;
-        if(identity.address == owner) belongsThis=true;
-        let delegateThis = await validDelegate(k);
-        _hasManagedCredentials = true;
+    const discoverManagedCredentials = async function() {
+      gun.get(identity.address).get("ManagedCredentials").map().on(async function(v,k) {
+          _managedCredentials[k] = await _resolveDid(v);
+          const pk = await _decryptWithPrivateKey(keys.privateKey,_managedCredentials[k].payload.private);
+          const owner = await identityOwner(k);
+          let belongsThis = false;
+          if(identity.address == owner) belongsThis=true;
+          let delegateThis = await validDelegate(k);
+          _hasManagedCredentials = true;
 
-        _managedCredentials[k] = {
-          id:"did:ethr:6226:"+k,
-          address:k,
-          privateKey:pk,
-          publicKey:EthCrypto.publicKeyByPrivateKey(pk),
-          owner:k,
-          belongsThis:belongsThis,
-          delegateThis:delegateThis
-        }
-    });
+          _managedCredentials[k] = {
+            id:"did:ethr:6226:"+k,
+            address:k,
+            privateKey:pk,
+            publicKey:EthCrypto.publicKeyByPrivateKey(pk),
+            owner:k,
+            belongsThis:belongsThis,
+            delegateThis:delegateThis
+          }
+      });
+    }
+
 
     const subscribeGlobal = async function() {
       gun.get("global").on(async function(ack) {
@@ -426,6 +474,7 @@ const TydidsP2P = {
     }
     // Bootstrapping
     _publishIdentity(identity);
+    discoverManagedCredentials();
     await _devFunding(identity.address);
 
     return {
@@ -446,7 +495,8 @@ const TydidsP2P = {
       setIdentityAlias:getIdentityAlias,
       getIdentityAlias:setIdentityAlias,
       validDelegate:validDelegate,
-      waitManagedCredentials:waitManagedCredentials
+      waitManagedCredentials:waitManagedCredentials,
+      resolveJWTDID:_resolveDid
     }
   }
 }

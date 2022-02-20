@@ -341,6 +341,10 @@ const TydidsP2P = {
         }
     }
 
+    const republish = async function(address,publicJWT) {
+      gun.get("did:ethr:6226:"+address).put({did:publicJWT});
+    }
+
     const identityOwner = async function(address) {
       const registry = new ethers.Contract( config.registry , config.abi , wallet );
       let res = await registry.identityOwner(address);
@@ -467,7 +471,7 @@ const TydidsP2P = {
     }
     const waitManagedCredentials = async function() {
       while(_hasManagedCredentials == false) {
-        console.log('Waiting for Managed Credentials');
+         emitter.emit("wMC","Waiting for Managed Credentials");
         await sleep(500);
       }
 
@@ -496,7 +500,9 @@ const TydidsP2P = {
       getIdentityAlias:setIdentityAlias,
       validDelegate:validDelegate,
       waitManagedCredentials:waitManagedCredentials,
-      resolveJWTDID:_resolveDid
+      resolveJWTDID:_resolveDid,
+      buildJWTDid:_buildJWTDid,
+      republishDID:republish
     }
   }
 }

@@ -56,6 +56,14 @@ const app = async function() {
     let outputPresentation = true;
     let presentation = await ssi.retrieveVP(options.presentation);
 
+    if(typeof options.writeTydidsJSON !== 'undefined') {
+      if(fs.existsSync('./.tydids.json')) {
+        let settings = JSON.parse(fs.readFileSync('./.tydids.json'));
+        settings.defaultDID = options.presentation
+        fs.writeFileSync('./.tydids.json',JSON.stringify(settings));
+      }
+    }
+
     if((typeof options.set !== 'undefined') && (args.length == 2)) {
       presentation[args[0]] = args[1];
       await ssi.updateVP(options.presentation,presentation);
@@ -71,7 +79,15 @@ const app = async function() {
     }
   }
   if(typeof options.createPresentation !== 'undefined') {
-    out(await ssi.createManagedPresentation());
+    let nssi = await ssi.createManagedPresentation();
+    out(nssi);
+    if(typeof options.writeTydidsJSON !== 'undefined') {
+      if(fs.existsSync('./.tydids.json')) {
+      	let settings = JSON.parse(fs.readFileSync('./.tydids.json'));
+        settings.defaultDID = nssi
+        fs.writeFileSync('./.tydids.json',JSON.stringify(settings));
+      }
+    }
   }
   if(typeof options.exit !== 'undefined') { process.exit(0) }
 }

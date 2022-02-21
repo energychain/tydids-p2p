@@ -83,6 +83,8 @@ tydids --presentation 0x8b77634AE6D170C34657880fF1eAC9Aaf566Fd1E -x
 
 **Note: parameter `-x` allows to quit/exit directly after receiving the did. Not listening to updates.**
 
+**Note: You might store your privateKey in a `.tydids.json` as like `{privateKey:'YOUR-KEY-HERE'}`**
+
 #### Node
 ```javascript
 let presentation = await ssi.retrieveVP(address);

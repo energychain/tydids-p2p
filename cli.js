@@ -4,6 +4,7 @@ const out = console.log;
 console.log = function() {}
 
 const tydids = require("./TydidsP2P.js");
+const fs = require("fs");
 
 const { program } = require('commander');
 
@@ -21,6 +22,13 @@ program.parse();
 
 const options = program.opts();
 const args = program.args;
+
+if(fs.existsSync('./.tydids.json')) {
+	let settings = JSON.parse(fs.readFileSync('./.tydids.json'));
+	if(typeof settings.privateKey !== 'undefined') {
+    options["privateKey"] = settings.privateKey;
+  }
+}
 
 let openApp = true;
 let privateKey = null;

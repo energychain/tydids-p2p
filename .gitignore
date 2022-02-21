@@ -106,3 +106,5 @@ dist
 # RAD Data
 radata/*
 radata*
+
+.tydids.json

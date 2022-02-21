@@ -24,6 +24,7 @@ const TydidsP2P = {
   _encryptWithPublicKey:_encryptWithPublicKey,
   _decryptWithPrivateKey:_decryptWithPrivateKey,
   ssi:async function(privateKey,gun) {
+    let dids = {};
 
     const EthrDID = require("ethr-did").EthrDID;
     const getResolver = require('ethr-did-resolver').getResolver;
@@ -146,6 +147,10 @@ const TydidsP2P = {
         const didResolver = new Resolver(getResolver(config));
         const ethrDid = new EthrDID(config);
         const did = await ethrDid.verifyJWT(jwt, didResolver);
+        // Might add a private DID Cache here
+        if((typeof did.payload !== 'undefined') && (typeof did.payload.address !== 'undefined')) {
+            dids[did.payload.address] = did;
+        } 
         return did;
       } catch(e) {
         console.log('_resolveDid - Master Caution');
@@ -488,6 +493,7 @@ const TydidsP2P = {
       emitter:emitter,
       stats:stats,
       getIdentity:getIdentity,
+      collectedDIDs:dids,
       createManagedPresentation:createManagedPresentation,
       managedCredentials:_managedCredentials,
       updateVP:updateVP,

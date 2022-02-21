@@ -29,6 +29,11 @@ if(fs.existsSync('./.tydids.json')) {
 	if(typeof settings.privateKey !== 'undefined') {
     options["privateKey"] = settings.privateKey;
   }
+  if(typeof settings.defaultDID !== 'undefined') {
+    if(typeof options.presentation == 'undefined') {
+      options.presentation = settings.defaultDID;
+    }
+  }
 }
 
 let openApp = true;
@@ -84,7 +89,7 @@ const app = async function() {
     if(typeof options.writeTydidsJSON !== 'undefined') {
       if(fs.existsSync('./.tydids.json')) {
       	let settings = JSON.parse(fs.readFileSync('./.tydids.json'));
-        settings.defaultDID = nssi
+        settings.defaultDID = nssi.address;
         fs.writeFileSync('./.tydids.json',JSON.stringify(settings));
       }
     }

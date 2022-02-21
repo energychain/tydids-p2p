@@ -10,6 +10,7 @@ const { program } = require('commander');
 
 program
   .option('-priv --privateKey <key>')
+  .option('-w --writeTydidsJSON')
   .option('-i --identity')
   .option('-x --exit')
   .option('-c --createPresentation')
@@ -37,11 +38,19 @@ if(typeof options.createPrivateKey !== 'undefined') {
   let wallet = tydids.ethers.Wallet.createRandom();
   out(wallet.privateKey);
   openApp = false;
+  if(typeof options.writeTydidsJSON !== 'undefined') {
+      let obj = {
+        privateKey: wallet.privateKey,
+        address:wallet.address
+      };
+      fs.writeFileSync("./.tydids.json",JSON.stringify(obj));
+  }
 }
 
 const app = async function() {
   const ssi = await tydids.ssi(privateKey);
   //await ssi.waitManagedCredentials();
+
   if(typeof options.identity !== 'undefined') { out(ssi.identity); }
   if(typeof options.presentation !== 'undefined') {
     let outputPresentation = true;

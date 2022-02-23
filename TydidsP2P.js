@@ -25,6 +25,7 @@ const TydidsP2P = {
   _decryptWithPrivateKey:_decryptWithPrivateKey,
   ssi:async function(privateKey,gun) {
     let dids = {};
+    let piLog = {};
 
     const EthrDID = require("ethr-did").EthrDID;
     const getResolver = require('ethr-did-resolver').getResolver;
@@ -46,22 +47,43 @@ const TydidsP2P = {
     }
 
     const _publishIdentity  = async function(_identity) {
+      _identity.updated = new Date().getTime();
+      if((typeof piLog[_identity.address] == 'undefined') || (piLog[_identity.address] < _identity.updated - 5000)) {
+          piLog[_identity.address] = _identity.updated;
+            try {
+                const statsUpdate = function(ack) {
+                    if(typeof ack.err == 'undefined') { stats.identity.ok++; } else { stats.identity.err++; }
+                }
+                const jwt = await _buildJWTDid(_identity);
+                const did = {did:jwt,uri:"did:ethr:6226:"+_identity.address};
+                if(identity.address == _identity.address) {
+                  user.get("identity").put(did,statsUpdate);
+                } else {
+                  const delegationJWT = await _encryptWithPublicKey(_identity.publicKey,await _buildJWTDid(_identity,_identity.address));
+                  gun.get("did:ethr:6226:"+_identity.address+":delegates").put({did:delegationJWT},statsUpdate);
+                }
+                gun.get("identities").get(_identity.address).put(did,statsUpdate);
+                gun.get("did:ethr:6226:"+_identity.address).put(did,statsUpdate);
+                gun.get(_identity.address).put(did,statsUpdate);
+                gun.get("did:ethr:6226:"+_identity.address).on(async function(ack) {
+                   emitter.emit("did:ethr:6226:"+_identity.address,"Published Identity Update");
+                   _publishIdentity(_identity);
+                });
+
+            } catch(e) {
+              console.log('_publishIdentity()',e);
+            }
+          }
+        return;
+    }
+
+    const identityPing = async function(_identity) {
       try {
-          const statsUpdate = function(ack) {
-              if(typeof ack.err == 'undefined') { stats.identity.ok++; } else { stats.identity.err++; }
-          }
-          const jwt = await _buildJWTDid(_identity);
-          const did = {did:jwt,uri:"did:ethr:6226:"+_identity.address};
-          if(identity.address == _identity.address) {
-            user.get("identity").put(did,statsUpdate);
-          } else {
-            const delegationJWT = await _encryptWithPublicKey(_identity.publicKey,await _buildJWTDid(_identity,_identity.address));
-            gun.get("did:ethr:6226:"+_identity.address+":delegates").put({did:delegationJWT},statsUpdate);
-          }
-          gun.get("identities").get(_identity.address).put(did,statsUpdate);
-          gun.get("did:ethr:6226:"+_identity.address).put(did,statsUpdate);
+            let ping = {};
+            ping[identity.address] = new Date().getTime();
+            gun.get("did:ethr:6226:"+_identity.address).get("ping").put(ping);
       } catch(e) {
-        console.log('_publishIdentity',e);
+        consle.log("identityPing()",e);
       }
     }
 
@@ -128,7 +150,7 @@ const TydidsP2P = {
     // Did Functions
     const _buildJWTDid = async function(object,_identity) {
       if((typeof _identity == 'undefined') || (_identity == null)) _identity = identity.address;
-
+      object.iat = Math.round(new Date().getTime()/1000);
       try {
         const ethrDid = new EthrDID({identifier:_identity,chainNameOrId:config.chainId,registry:config.registry,rpcUrl:config.rpcUrl,privateKey:keys.privateKey});
         const jwt =  await ethrDid.signJWT(object);
@@ -150,10 +172,10 @@ const TydidsP2P = {
         // Might add a private DID Cache here
         if((typeof did.payload !== 'undefined') && (typeof did.payload.address !== 'undefined')) {
             dids[did.payload.address] = did;
-        } 
+        }
         return did;
       } catch(e) {
-        console.log('_resolveDid - Master Caution');
+        console.log('_resolveDid - Master Caution',e);
         // try offline without Resolver!
         let res = jsontokens.decodeToken(jwt)
         return res;
@@ -195,14 +217,17 @@ const TydidsP2P = {
     }
 
     const getIdentity = async function(address) {
-      const node = gun.get("identities").get(address);
-      return await _onceWithData(node);
+      const node1 = gun.get("identities").get(address);
+      const node2 = gun.get(address);
+      let res1 = _onceWithData(node1);
+      let res2 = _onceWithData(node2);
+      return await Promise.any([res1,res2]);
     }
 
     const _devFunding = function(account) {
       return new Promise(async function(resolve, reject) {
       try {
-        console.log('Ensure Funding',account);
+        // console.log('Ensure Funding',account);
          let balance = await provider.getBalance(account);
          if(balance < 2023100000000000) {
                https.get('https://api.corrently.io/v2.0/idideal/devmode?account='+account,function(res) {
@@ -271,9 +296,13 @@ const TydidsP2P = {
        await doOwnerChange();
        // Wait to get verified Ownership
        let nOwner = await identityOwner(mcIdentity.address);
+       let emitted = false;
        while(nOwner !== identity.address) {
-         emitter.emit("cMP","Wait for Consensus of Ownership");
-         sleep(3500);
+         if(!emitted) {
+           emitter.emit("cMP","Wait for Consensus of Ownership");
+           emitted = true;
+         }
+         await sleep(1500);
          nOwner = await identityOwner(mcIdentity.address);
        }
        const encCred = await _encryptWithPublicKey(identity.publicKey,mcKeys.privateKey);
@@ -289,6 +318,7 @@ const TydidsP2P = {
            belongsThis:true,
            delegateThis:true
          }
+         await sleep(500); // Wait shortly to allow RAD to save!
        } catch(e) {
          console.log('createManagedPresentation():identity',e);
        }
@@ -361,10 +391,17 @@ const TydidsP2P = {
       let res = await registry.validDelegate(_identity,"0x766572694b657900000000000000000000000000000000000000000000000000",identity.address);
       return res;
     }
+
     const retrieveVP = async function(address) {
       const node = gun.get("did:ethr:6226:"+address);
       let data = await _onceWithData(node);
       _subscribeVP(address);
+      let delegatedToMe = await validDelegate(address);
+      if(delegatedToMe) {
+          let mnode = await _onceWithEncryption(gun.get(identity.address).get("ManagedCredentials").get(address));
+          await retrieveDelegationVP(address);
+
+      }
       return data;
     }
 
@@ -377,9 +414,7 @@ const TydidsP2P = {
 
     const retrieveDelegationVP = async function(address) {
       if(typeof _managedCredentials[address] == 'undefined') {
-        discoverManagedCredentials();
-        setInterval(discoverManagedCredentials,5000);
-        await waitManagedCredentials();
+        return {};
       } else {
         try {
           const node = gun.get("did:ethr:6226:"+address+":delegates").get("did");
@@ -393,15 +428,20 @@ const TydidsP2P = {
     }
 
     const delegate = async function(_identity,to,duration) {
-        if((typeof duration == 'undefined')||(duration==null)) duration = 86400*365;
+        if((typeof duration == 'undefined')||(duration==null)) duration = 86400000*365;
+        emitter.emit("delegation",'Wait Managed Credentials');
+        identityPing(to); // need to be done in order to ensure we are able to retrieve Identity with getIdentity(to);
+        await waitManagedCredentials();
         if(typeof _managedCredentials[_identity] == 'undefined') throw "Unable to delegate - not managed";
-        const delegateId = await getIdentity(to);
+        emitter.emit("delegation",'Ensured is Managed Credential');
+        const delegateId = await getIdentity(to); // TODO - Here we need to "ping" other party to ensure it republishs!
+        emitter.emit("delegation",'Received target Identity');
         if((typeof delegateId == 'undefined')||(delegateId == null)) throw "Unable to retrieve Public Key from graph";
-
         try {
           const registry = new ethers.Contract( config.registry , config.abi , wallet );
+          emitter.emit("delegation","Prepared Consensus Transaction");
           let res = await registry.addDelegate(_identity,"0x766572694b657900000000000000000000000000000000000000000000000000",to,duration);
-          console.log("BC Delegate Result",res);
+          emitter.emit("delegation","Consensus Tx Hash "+res.hash);          
           await sleep(500);
           const encCred = await _encryptWithPublicKey(delegateId.publicKey,_managedCredentials[_identity].privateKey);
           try {
@@ -416,6 +456,19 @@ const TydidsP2P = {
         } catch(e) {
           console.log("delegate()",e);
         }
+    }
+
+    const revoke = async function(_identity,to) {
+      try {
+        const registry = new ethers.Contract( config.registry , config.abi , wallet );
+        emitter.emit("revokeTx","Prepared Consensus Transaction");
+        let res = await registry.revokeDelegate(_identity,"0x766572694b657900000000000000000000000000000000000000000000000000",to);
+        emitter.emit("revokation",res);
+        console.log("BC Revoke Result",res);
+        return res;
+      } catch(e) {
+        console.log("revoke()",e);
+      }
     }
 
     const _getAliasesDid = async function() {
@@ -500,6 +553,7 @@ const TydidsP2P = {
       retrieveVP:retrieveVP,
       retrieveDelegationVP:retrieveDelegationVP,
       delegate:delegate,
+      revoke:revoke,
       subscribeGlobal:subscribeGlobal,
       identityOwner:identityOwner,
       setIdentityAlias:getIdentityAlias,
@@ -508,7 +562,8 @@ const TydidsP2P = {
       waitManagedCredentials:waitManagedCredentials,
       resolveJWTDID:_resolveDid,
       buildJWTDid:_buildJWTDid,
-      republishDID:republish
+      republishDID:republish,
+      identityPing:identityPing
     }
   }
 }

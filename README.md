@@ -9,6 +9,8 @@
 [![CO2Offset](https://api.corrently.io/v2.0/ghgmanage/statusimg?host=tydids-p2p&svg=1)](https://co2offset.io/badge.html?host=tydids-p2p)
 
 [![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/energychain/tydids-p2p)
+[![CodePen]((https://img.shields.io/badge/Codepen-000000?style=for-the-badge&logo=codepen&logoColor=white))](https://codepen.io/zoernert/pen/wvPmOvw)
+
 
 ## Installation
 
@@ -49,8 +51,7 @@ Each self sovereign identity needs to have a private-key. So any usage/function 
 tydids --createPrivateKey
 0x62c3e5c1906d6e19e35e6fc1575dde0bc9bc5bc0c1ea84caf84b371a4bc00dca
 
-tydids --
-priv 0x62c3e5c1906d6e19e35e6fc1575dde0bc9bc5bc0c1ea84caf84b371a4bc00dca --identity -x
+tydids --priv 0x62c3e5c1906d6e19e35e6fc1575dde0bc9bc5bc0c1ea84caf84b371a4bc00dca --identity -x
 ```
 
 #### Node

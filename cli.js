@@ -15,9 +15,12 @@ program
   .option('-x --exit')
   .option('-c --createPresentation')
   .option('-p --presentation <identity>')
+  .option('-d --delegate <identity>')
   .option('-v --verbose')
   .option('-s --set')
-  .option('--createPrivateKey');
+  .option('-m --managedCredentials')
+  .option('--createPrivateKey')
+  .option('--jwtID');
 
 program.parse();
 
@@ -51,16 +54,39 @@ if(typeof options.createPrivateKey !== 'undefined') {
       fs.writeFileSync("./.tydids.json",JSON.stringify(obj));
   }
 }
+if(typeof options.verbose !== 'undefined') {
+  console.log = out;
+}
 
 const app = async function() {
   const ssi = await tydids.ssi(privateKey);
   //await ssi.waitManagedCredentials();
+  if(typeof options.managedCredentials !== 'undefined') {
+      await ssi.waitManagedCredentials();
+      out(ssi.managedCredentials);
+  }
+
+  if(typeof options.jwtID !== 'undefined') {
+      out(await ssi.buildJWTDid(ssi.identity));
+  }
 
   if(typeof options.identity !== 'undefined') { out(ssi.identity); }
   if(typeof options.presentation !== 'undefined') {
     let outputPresentation = true;
     let presentation = await ssi.retrieveVP(options.presentation);
+    // Add Delegation handling here!
+    if(typeof options.delegate !== 'undefined') {
+      ssi.emitter.on('delegation',function(data) {
+        out(data);
+      });
 
+      try {
+        let res = await ssi.delegate(options.presentation,options.delegate);
+        out(res);
+      } catch(e) {
+        out(e);
+      }
+    }
     if(typeof options.writeTydidsJSON !== 'undefined') {
       if(fs.existsSync('./.tydids.json')) {
         let settings = JSON.parse(fs.readFileSync('./.tydids.json'));
@@ -78,12 +104,15 @@ const app = async function() {
 
     if(outputPresentation) {
       ssi.emitter.on('did:ethr:6226:'+options.presentation,function(data) {
-        out(presentation);
+        if(typeof options.verbose !== 'undefined') out(presentation);
       });
       out(presentation);
     }
   }
   if(typeof options.createPresentation !== 'undefined') {
+    ssi.emitter.on('cMP',function(data) {
+      console.log(data);
+    });
     let nssi = await ssi.createManagedPresentation();
     out(nssi);
     if(typeof options.writeTydidsJSON !== 'undefined') {

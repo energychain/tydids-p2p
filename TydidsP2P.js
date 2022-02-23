@@ -24,6 +24,9 @@ const TydidsP2P = {
   _encryptWithPublicKey:_encryptWithPublicKey,
   _decryptWithPrivateKey:_decryptWithPrivateKey,
   ssi:async function(privateKey,gun) {
+    if((typeof privateKey == 'undefined') || (privateKey == null)) {
+      privateKey = '0x52a3442496ba4cd6444ddd147855725741bc385e93d08d66c62d01a7347531b7'; // view Only Key! Do not Delegate to 0x6f7197B17384Ac194eE0DfaC444D018F174C4553
+    }
     let dids = {};
     let piLog = {};
 
@@ -352,28 +355,33 @@ const TydidsP2P = {
     }
 
     const updateVP = async function(address,publicData,groupData,privateData) {
-        try {
-          const statsUpdate = function(ack) {
-              if(typeof stats.vps == 'undefined') stats.vps = {};
-              if(typeof stats.vps[address] == 'undefined') stats.vps[address] = { ok:0,err:0};
-              if(typeof ack.err == 'undefined') { stats.vps[address].ok++; } else { stats.vps[address].err++; }
-          }
+        if(identity.address == '0x6f7197B17384Ac194eE0DfaC444D018F174C4553') {
+          console.log("Warning: View only key in CRUD Operation");
+          return;
+        } {
+          try {
+            const statsUpdate = function(ack) {
+                if(typeof stats.vps == 'undefined') stats.vps = {};
+                if(typeof stats.vps[address] == 'undefined') stats.vps[address] = { ok:0,err:0};
+                if(typeof ack.err == 'undefined') { stats.vps[address].ok++; } else { stats.vps[address].err++; }
+            }
 
-          const publicJWT = await _buildJWTDid(publicData,address);
-          gun.get("did:ethr:6226:"+address).put({did:publicJWT},statsUpdate);
-          _publishGlobal( gun.get("did:ethr:6226:"+address));
-          await sleep(200);
-          retrieveVP(address);
-          if((typeof groupData !== 'undefined') && (groupData !== null)) {
-            let groupId = await getIdentity(address);
-            const delegationJWT = await _encryptWithPublicKey(groupId.publicKey,await _buildJWTDid(groupData,address));
-            gun.get("did:ethr:6226:"+address+":delegates").put({did:delegationJWT},statsUpdate);
-            const privateJWT = await _encryptWithPublicKey(identity.publicKey,await _buildJWTDid(privateData,address));
-            gun.get("did:ethr:6226:"+address+":"+identity.address).put({did:privateJWT},statsUpdate);
+            const publicJWT = await _buildJWTDid(publicData,address);
+            gun.get("did:ethr:6226:"+address).put({did:publicJWT},statsUpdate);
+            _publishGlobal( gun.get("did:ethr:6226:"+address));
+            await sleep(200);
+            retrieveVP(address);
+            if((typeof groupData !== 'undefined') && (groupData !== null)) {
+              let groupId = await getIdentity(address);
+              const delegationJWT = await _encryptWithPublicKey(groupId.publicKey,await _buildJWTDid(groupData,address));
+              gun.get("did:ethr:6226:"+address+":delegates").put({did:delegationJWT},statsUpdate);
+              const privateJWT = await _encryptWithPublicKey(identity.publicKey,await _buildJWTDid(privateData,address));
+              gun.get("did:ethr:6226:"+address+":"+identity.address).put({did:privateJWT},statsUpdate);
+            }
+          } catch(e) {
+            console.log('updateVP()',e);
           }
-        } catch(e) {
-          console.log('updateVP()',e);
-        }
+      }
     }
 
     const republish = async function(address,publicJWT) {
@@ -427,7 +435,7 @@ const TydidsP2P = {
       }
     }
 
-    const delegate = async function(_identity,to,duration) {
+    const delegate = async function(_identity,to,duration) {      
         if((typeof duration == 'undefined')||(duration==null)) duration = 86400000*365;
         emitter.emit("delegation",'Wait Managed Credentials');
         identityPing(to); // need to be done in order to ensure we are able to retrieve Identity with getIdentity(to);
@@ -441,7 +449,7 @@ const TydidsP2P = {
           const registry = new ethers.Contract( config.registry , config.abi , wallet );
           emitter.emit("delegation","Prepared Consensus Transaction");
           let res = await registry.addDelegate(_identity,"0x766572694b657900000000000000000000000000000000000000000000000000",to,duration);
-          emitter.emit("delegation","Consensus Tx Hash "+res.hash);          
+          emitter.emit("delegation","Consensus Tx Hash "+res.hash);
           await sleep(500);
           const encCred = await _encryptWithPublicKey(delegateId.publicKey,_managedCredentials[_identity].privateKey);
           try {

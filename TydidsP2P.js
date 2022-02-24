@@ -195,6 +195,7 @@ const TydidsP2P = {
               },100);
             } else {
               const did = await _resolveDid(obj.did);
+              emitter.emit("raw+did:ethr:"+obj.issuer,obj);
               resolve(did.payload);
             }
         });
@@ -348,7 +349,6 @@ const TydidsP2P = {
 
           gun.get("did:ethr:6226:"+address).on(async function(ack) {
              emitter.emit("jwt:ethr:6226:"+address,ack.did);
-             emitter.emit("jwt+did:ethr"+address,jsontokens.decodeToken(ack.did));
              emitter.emit("did:ethr:6226:"+address,await retrieveVP(address));
           });
 
@@ -405,8 +405,6 @@ const TydidsP2P = {
     const retrieveVP = async function(address) {
       const node = gun.get("did:ethr:6226:"+address);
       let data = await _onceWithData(node);
-      emitter.emit("jwt:ethr:6226:"+address,data.did);
-      emitter.emit("jwt+did:ethr"+address,jsontokens.decodeToken(data.did));
       _subscribeVP(address);
       let delegatedToMe = await validDelegate(address);
       if(delegatedToMe) {

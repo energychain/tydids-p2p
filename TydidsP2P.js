@@ -194,8 +194,8 @@ const TydidsP2P = {
                 resolve(_onceWithData(node));
               },100);
             } else {
-              const did = await _resolveDid(obj.did);
-              emitter.emit("raw+did:ethr:"+obj.issuer,obj);
+              const did = await _resolveDid(obj.did);              
+              emitter.emit("raw+did:ethr:"+did.issuer,obj);
               resolve(did.payload);
             }
         });

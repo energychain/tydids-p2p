@@ -347,6 +347,7 @@ const TydidsP2P = {
           });
 
           gun.get("did:ethr:6226:"+address).on(async function(ack) {
+             emitter.emit("jwt:ethr:6226:"+address,await retrieveVP(ack));
              emitter.emit("did:ethr:6226:"+address,await retrieveVP(address));
           });
 
@@ -435,7 +436,7 @@ const TydidsP2P = {
       }
     }
 
-    const delegate = async function(_identity,to,duration) {      
+    const delegate = async function(_identity,to,duration) {
         if((typeof duration == 'undefined')||(duration==null)) duration = 86400000*365;
         emitter.emit("delegation",'Wait Managed Credentials');
         identityPing(to); // need to be done in order to ensure we are able to retrieve Identity with getIdentity(to);

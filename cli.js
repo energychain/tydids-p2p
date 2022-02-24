@@ -104,7 +104,7 @@ const app = async function() {
 
     if(outputPresentation) {
       ssi.emitter.on('did:ethr:6226:'+options.presentation,function(data) {
-        if(typeof options.verbose !== 'undefined') out(presentation);
+        out(data);
       });
       out(presentation);
     }

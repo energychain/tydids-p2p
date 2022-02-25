@@ -194,8 +194,8 @@ const TydidsP2P = {
                 resolve(_onceWithData(node));
               },100);
             } else {
-              const did = await _resolveDid(obj.did);              
-              emitter.emit("raw+did:ethr:"+did.issuer,obj);
+              const did = await _resolveDid(obj.did);
+              emitter.emit("raw:"+did.issuer,did);
               resolve(did.payload);
             }
         });
@@ -225,7 +225,12 @@ const TydidsP2P = {
       const node2 = gun.get(address);
       let res1 = _onceWithData(node1);
       let res2 = _onceWithData(node2);
-      return await Promise.any([res1,res2]);
+      if(typeof Promise.any == 'function') {
+        return await Promise.any([res1,res2]);
+      } else {
+        return await res2;
+      }
+
     }
 
     const _devFunding = function(account) {

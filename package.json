@@ -1,6 +1,6 @@
 {
   "name": "tydids-p2p",
-  "version": "0.6.5",
+  "version": "0.6.6",
   "description": "A consensus driven decentralized data governance framework.",
   "main": "./TydidsP2P.js",
   "bin": {
@@ -29,6 +29,9 @@
   "bugs": {
     "url": "https://github.com/energychain/tydids-p2p/issues"
   },
+  "engines": {
+      "node": ">=14.0.0"
+   },
   "homepage": "https://github.com/energychain/tydids-p2p#readme",
   "dependencies": {
     "@peculiar/webcrypto": "^1.2.3",

@@ -1,6 +1,6 @@
 {
   "name": "tydids-p2p",
-  "version": "0.6.7",
+  "version": "0.6.8",
   "description": "A consensus driven decentralized data governance framework.",
   "main": "./TydidsP2P.js",
   "bin": {

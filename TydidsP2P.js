@@ -353,8 +353,11 @@ const TydidsP2P = {
           });
 
           gun.get("did:ethr:6226:"+address).on(async function(ack) {
+            if(_subscribedVPs[address] !== JSON.stringify(ack)) {
+              _subscribedVPs[address] = JSON.stringify(ack)
              emitter.emit("jwt:ethr:6226:"+address,ack.did);
              emitter.emit("did:ethr:6226:"+address,await retrieveVP(address));
+            }
           });
 
           _subscribedVPs[address] = new Date().getTime();
@@ -547,12 +550,22 @@ const TydidsP2P = {
          emitter.emit("wMC","Waiting for Managed Credentials");
         await sleep(500);
       }
-
     }
+
+    const reSubscribe = async function() {
+      if(typeof _subscribedVPs !== 'undefined') {
+        for (const [key, value] of Object.entries(_subscribedVPs)) {
+            _subscribeVP(key);
+        }
+      }
+    }
+
     // Bootstrapping
     _publishIdentity(identity);
     discoverManagedCredentials();
     await _devFunding(identity.address);
+
+    setInterval(reSubscribe,90000);
 
     return {
       wallet: wallet,

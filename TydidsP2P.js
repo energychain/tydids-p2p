@@ -357,9 +357,14 @@ const TydidsP2P = {
               _subscribedVPs[address] = JSON.stringify(ack)
              emitter.emit("jwt:ethr:6226:"+address,ack.did);
              emitter.emit("did:ethr:6226:"+address,await retrieveVP(address));
+             if((typeof ack._revision !== 'undefined') && (typeof ack._successor !== 'undefined')) {
+               gun.get("did:ethr:6226:"+address).get(ack._successor).on(async function(ackS) {
+                 emitter.emit("jwt:ethr:6226:"+address,ackS.did);
+                 emitter.emit("did:ethr:6226:"+address,await retrieveVP(address,ack._revision));
+               });
+             }
             }
           });
-
           _subscribedVPs[address] = new Date().getTime();
       }
     }
@@ -375,9 +380,18 @@ const TydidsP2P = {
                 if(typeof stats.vps[address] == 'undefined') stats.vps[address] = { ok:0,err:0};
                 if(typeof ack.err == 'undefined') { stats.vps[address].ok++; } else { stats.vps[address].err++; }
             }
-
+            const tmpWallet = ethers.Wallet.createRandom();
+            if(typeof publicData._ancestor !== 'undefined') {
+                publicData._revision = publicData._ancestor;
+                delete publicData._ancestor;
+            } else {
+                const tmpWallet2 = ethers.Wallet.createRandom();
+                publicData._revision = tmpWallet2.address;
+            }
+            publicData._successor = tmpWallet.address;
             const publicJWT = await _buildJWTDid(publicData,address);
-            gun.get("did:ethr:6226:"+address).put({did:publicJWT},statsUpdate);
+            gun.get("did:ethr:6226:"+address).put({did:publicJWT,_successor:publicData._successor,_revision:publicData._revision},statsUpdate);
+            gun.get("did:ethr:6226:"+address).get(publicData._revision).put({did:publicJWT,_successor:publicData._successor,_revision:publicData._revision},statsUpdate);
             _publishGlobal( gun.get("did:ethr:6226:"+address));
             await sleep(200);
             retrieveVP(address);
@@ -410,8 +424,11 @@ const TydidsP2P = {
       return res;
     }
 
-    const retrieveVP = async function(address) {
-      const node = gun.get("did:ethr:6226:"+address);
+    const retrieveVP = async function(address,revision) {
+      let node = gun.get("did:ethr:6226:"+address);
+      if((typeof revision !== 'undefined') && (revision !== null)) {
+        node = gun.get("did:ethr:6226:"+address).get(revision);
+      }
       let data = await _onceWithData(node);
       _subscribeVP(address);
       let delegatedToMe = await validDelegate(address);
@@ -555,6 +572,7 @@ const TydidsP2P = {
     const reSubscribe = async function() {
       if(typeof _subscribedVPs !== 'undefined') {
         for (const [key, value] of Object.entries(_subscribedVPs)) {
+             delete _subscribedVPs[key];
             _subscribeVP(key);
         }
       }

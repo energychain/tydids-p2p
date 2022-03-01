@@ -11,6 +11,13 @@
 [![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/energychain/tydids-p2p)
 [![CodePen]((https://img.shields.io/badge/Codepen-000000?style=for-the-badge&logo=codepen&logoColor=white))](https://codepen.io/zoernert/pen/wvPmOvw)
 
+Imagine a dataset that is available somewhere in the world might be accessed everywhere. How? You just need to know its address.
+- Decide who is allowed to see this dataset.
+- Forget about protocols, p2p, request-responds, polling for changes.
+- Set a value in your dataset with one line of code
+- Subscribe to changes with another single line of code
+
+## This is TyDIDs.
 
 ## Installation
 

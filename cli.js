@@ -16,6 +16,7 @@ program
   .option('-c --createPresentation')
   .option('-p --presentation <identity>')
   .option('-d --delegate <identity>')
+  .option('-a --ancestor <id>')
   .option('-v --verbose')
   .option('-s --set')
   .option('-m --managedCredentials')
@@ -95,6 +96,9 @@ const app = async function() {
       }
     }
 
+    if((typeof options.ancestor !== 'undefined')) {
+      presentation._ancestor = options.ancestor;
+    }
     if((typeof options.set !== 'undefined') && (args.length == 2)) {
       presentation[args[0]] = args[1];
       await ssi.updateVP(options.presentation,presentation);

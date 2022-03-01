@@ -33,6 +33,8 @@ const TydidsP2P = {
     const EthrDID = require("ethr-did").EthrDID;
     const getResolver = require('ethr-did-resolver').getResolver;
     const Resolver = require('did-resolver').Resolver;
+    const PACKAGE = require("./package.json");
+    const VERSION = PACKAGE.version;
 
     const config = {
       rpcUrl: "https://rpc.tydids.com/",
@@ -173,8 +175,8 @@ const TydidsP2P = {
         const ethrDid = new EthrDID(config);
         const did = await ethrDid.verifyJWT(jwt, didResolver);
         // Might add a private DID Cache here
-        if((typeof did.payload !== 'undefined') && (typeof did.payload.address !== 'undefined')) {
-            dids[did.payload.address] = did;
+        if((typeof did.payload !== 'undefined') && (typeof did.payload._address !== 'undefined')) {
+            dids[did.payload._address] = did;
         }
         return did;
       } catch(e) {
@@ -387,6 +389,7 @@ const TydidsP2P = {
                 const tmpWallet2 = ethers.Wallet.createRandom();
                 publicData._revision = tmpWallet2.address;
             }
+            publicData._address = address;
             const tmpWallet = ethers.Wallet.createRandom();
             publicData._successor = tmpWallet.address;
             const publicJWT = await _buildJWTDid(publicData,address);
@@ -394,7 +397,8 @@ const TydidsP2P = {
               did:publicJWT,
               _successor:publicData._successor,
               _revision:publicData._revision,
-              _ancestor:publicData._ancestor
+              _ancestor:publicData._ancestor,
+              _address:address
             }
             gun.get("did:ethr:6226:"+address).put(nodePayload,statsUpdate);
             gun.get("did:ethr:6226:"+address).get(publicData._revision).put(nodePayload,statsUpdate);
@@ -615,7 +619,8 @@ const TydidsP2P = {
       resolveJWTDID:_resolveDid,
       buildJWTDid:_buildJWTDid,
       republishDID:republish,
-      identityPing:identityPing
+      identityPing:identityPing,
+      version:VERSION
     }
   }
 }

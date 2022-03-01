@@ -61,6 +61,9 @@ if(typeof options.verbose !== 'undefined') {
 
 const app = async function() {
   const ssi = await tydids.ssi(privateKey);
+  if(typeof options.verbose !== 'undefined') {
+    out('TyDIDs P2P version',ssi.version);
+  }
   //await ssi.waitManagedCredentials();
   if(typeof options.managedCredentials !== 'undefined') {
       await ssi.waitManagedCredentials();

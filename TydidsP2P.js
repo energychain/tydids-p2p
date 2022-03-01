@@ -202,8 +202,14 @@ const TydidsP2P = {
             } else {
               try {
                 const did = await _resolveDid(obj.did);
-                emitter.emit("raw:"+did.issuer,did);
-                resolve(did.payload);
+                if((typeof did !== 'undefined') && (typeof did.issuer !== 'undefined')) {
+                  emitter.emit("raw:"+did.issuer,did);
+                }
+                if(typeof did !== 'undefined') {
+                  resolve(did.payload);
+                } else {
+                  resolve({});
+                }
               } catch(e) {
                   console.log('_onceWithData - Master Caution',e,obj);
                   resolve({});

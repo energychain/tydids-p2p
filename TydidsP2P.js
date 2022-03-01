@@ -175,8 +175,13 @@ const TydidsP2P = {
         const ethrDid = new EthrDID(config);
         const did = await ethrDid.verifyJWT(jwt, didResolver);
         // Might add a private DID Cache here
-        if((typeof did.payload !== 'undefined') && (typeof did.payload._address !== 'undefined')) {
-            dids[did.payload._address] = did;
+        console.log('DID',did);
+        if(((typeof did.payload !== 'undefined') && (typeof did.payload._address !== 'undefined'))||(typeof did._address !== 'undefined')) {
+            if(typeof did._address !== 'undefined') {
+              dids[did._address] = did;
+            } else {
+              dids[did.payload._address] = did;
+            }
         }
         return did;
       } catch(e) {

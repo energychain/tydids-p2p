@@ -380,18 +380,24 @@ const TydidsP2P = {
                 if(typeof stats.vps[address] == 'undefined') stats.vps[address] = { ok:0,err:0};
                 if(typeof ack.err == 'undefined') { stats.vps[address].ok++; } else { stats.vps[address].err++; }
             }
-            const tmpWallet = ethers.Wallet.createRandom();
-            if(typeof publicData._ancestor !== 'undefined') {
-                publicData._revision = publicData._ancestor;
-                delete publicData._ancestor;
+
+            if(typeof publicData._revision !== 'undefined') {
+                publicData._ancestor = publicData._revision;
             } else {
                 const tmpWallet2 = ethers.Wallet.createRandom();
                 publicData._revision = tmpWallet2.address;
             }
+            const tmpWallet = ethers.Wallet.createRandom();
             publicData._successor = tmpWallet.address;
             const publicJWT = await _buildJWTDid(publicData,address);
-            gun.get("did:ethr:6226:"+address).put({did:publicJWT,_successor:publicData._successor,_revision:publicData._revision},statsUpdate);
-            gun.get("did:ethr:6226:"+address).get(publicData._revision).put({did:publicJWT,_successor:publicData._successor,_revision:publicData._revision},statsUpdate);
+            const nodePayload = {
+              did:publicJWT,
+              _successor:publicData._successor,
+              _revision:publicData._revision,
+              _ancestor:publicData._ancestor
+            }
+            gun.get("did:ethr:6226:"+address).put(nodePayload,statsUpdate);
+            gun.get("did:ethr:6226:"+address).get(publicData._revision).put(nodePayload,statsUpdate);
             _publishGlobal( gun.get("did:ethr:6226:"+address));
             await sleep(200);
             retrieveVP(address);

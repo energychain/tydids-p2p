@@ -175,7 +175,6 @@ const TydidsP2P = {
         const ethrDid = new EthrDID(config);
         const did = await ethrDid.verifyJWT(jwt, didResolver);
         // Might add a private DID Cache here
-        console.log('DID',did);
         if(((typeof did.payload !== 'undefined') && (typeof did.payload._address !== 'undefined'))||(typeof did._address !== 'undefined')) {
             if(typeof did._address !== 'undefined') {
               dids[did._address] = did;
@@ -201,9 +200,14 @@ const TydidsP2P = {
                 resolve(_onceWithData(node));
               },100);
             } else {
-              const did = await _resolveDid(obj.did);
-              emitter.emit("raw:"+did.issuer,did);
-              resolve(did.payload);
+              try {
+                const did = await _resolveDid(obj.did);
+                emitter.emit("raw:"+did.issuer,did);
+                resolve(did.payload);
+              } catch(e) {
+                  console.log('_onceWithData - Master Caution',e,obj);
+                  resolve({});
+              }
             }
         });
       });

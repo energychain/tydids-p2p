@@ -77,7 +77,7 @@ const app = async function() {
   if(typeof options.identity !== 'undefined') { out(ssi.identity); }
   if(typeof options.presentation !== 'undefined') {
     let outputPresentation = true;
-    let presentation = await ssi.retrieveVP(options.presentation);
+    let presentation = await ssi.retrievePresentation(options.presentation);
     // Add Delegation handling here!
     if(typeof options.delegate !== 'undefined') {
       ssi.emitter.on('delegation',function(data) {
@@ -104,7 +104,7 @@ const app = async function() {
     }
     if((typeof options.set !== 'undefined') && (args.length == 2)) {
       presentation[args[0]] = args[1];
-      await ssi.updateVP(options.presentation,presentation);
+      await ssi.updatePresentation(options.presentation,presentation);
     }
 
     if(typeof options.verbose !== 'undefined') outputPresentation.true;
@@ -120,7 +120,7 @@ const app = async function() {
     ssi.emitter.on('cMP',function(data) {
       console.log(data);
     });
-    let nssi = await ssi.createManagedPresentation();
+    let nssi = await ssi.createPresentation();
     out(nssi);
     if(typeof options.writeTydidsJSON !== 'undefined') {
       if(fs.existsSync('./.tydids.json')) {

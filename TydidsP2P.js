@@ -444,14 +444,28 @@ const TydidsP2P = {
       return data;
     }
 
-    const updatePresentation = async function(address,publicData,groupData,privateData) {
-        if(identity.address == '0x6f7197B17384Ac194eE0DfaC444D018F174C4553') {
+    const updatePresentation = async function(address,publicData,extendMode) {
+         if((typeof extendMode == 'undefined') || (extendMode ==null)) {
+           extendMode = false;
+         }
+         if(extendMode == 'on') extendMode = true;
+         if(extendMode == 'off') extendMode = false;
+         if(extendMode == 'false') extendMode = false;
+
+         if(identity.address == '0x6f7197B17384Ac194eE0DfaC444D018F174C4553') {
           console.log("Warning: View only key in CRUD Operation");
           return;
         } else {
           try {
             let node = gun.get(address);
             let el = await _onceWithNode(node); // Caution: No Revision Check!
+            if(extendMode) {
+               let oldObject = await _onceWithData(node);
+               for (const [key, value] of Object.entries(publicData)) {
+                  oldObject[key] = value;
+              }
+              publicData = oldObject;
+            }
 
             const statsUpdate = function(ack) {
                 if(typeof stats.vps == 'undefined') stats.vps = {};
@@ -466,7 +480,7 @@ const TydidsP2P = {
             el.revision = el.successor;
             el.successor = tmpWallet.address;
             el.public = publicJWT;
-              console.log("New Revision",el.revision);
+            console.log("New Revision",el.revision);
             gun.get(address).put(el,statsUpdate);
             gun.get(address).get(el.revision).put(el,statsUpdate);
 
@@ -483,6 +497,7 @@ const TydidsP2P = {
               gun.get("did:ethr:6226:"+address+":"+identity.address).put({did:privateJWT},statsUpdate);
             }
             */
+            return el;
           } catch(e) {
             console.log('updatePresentation()',e);
           }

@@ -432,9 +432,20 @@ const TydidsP2P = {
       if((typeof revision !== 'undefined') && (revision !== null)) {
         node = gun.get(address).get(revision);
       }
+      let meta = await _onceWithNode(node);
       let data = await _onceWithData(node,address);
-
       _subscribePresentation(address);
+      if(typeof meta.successor !== 'undefined') {
+        if(typeof revisions[meta.successor] == 'undefined') {
+          revisions[meta.successor]  = new Date().getTime();
+          let successor = gun.get(address).get(revisions[meta.successor]);
+          retrievePresentation(address,successor); // no await, as this is a later emittor
+        }
+      }
+
+      emitter.emit("jwt:ethr:6226:"+address,meta.public);
+      emitter.emit("did:ethr:6226:"+address,data);
+
       let delegatedToMe = await validDelegate(address);
       if(delegatedToMe) {
           let mnode = await _onceWithEncryption(gun.get(identity.address).get("ManagedCredentials").get(address));

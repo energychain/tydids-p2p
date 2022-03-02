@@ -29,7 +29,8 @@ const TydidsP2P = {
     }
     let dids = {};
     let piLog = {};
-
+    let revisions = {};
+    
     const EthrDID = require("ethr-did").EthrDID;
     const getResolver = require('ethr-did-resolver').getResolver;
     const Resolver = require('did-resolver').Resolver;

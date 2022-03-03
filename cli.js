@@ -10,18 +10,15 @@ const { program } = require('commander');
 
 program
   .option('-priv --privateKey <key>')
-  .option('-w --writeTydidsJSON')
   .option('-i --identity')
   .option('-x --exit')
-  .option('-c --createPresentation')
-  .option('-p --presentation <identity>')
-  .option('-d --delegate <identity>')
-  .option('-a --ancestor <id>')
+  .option('-p --presentation [address]')
+  .option('-d --delegate <address>')
+  .option('-r --reset')
   .option('-v --verbose')
   .option('-s --set')
-  .option('-m --managedCredentials')
+  .option('-w --writeTydidsJSON')
   .option('--createPrivateKey')
-  .option('--jwtID');
 
 program.parse();
 
@@ -58,78 +55,42 @@ if(typeof options.createPrivateKey !== 'undefined') {
 if(typeof options.verbose !== 'undefined') {
   console.log = out;
 }
+let reset = false;
+if(typeof options.reset !== 'undefined') reset = true;
+if(typeof options.presentation !== 'undefined') reset = true;
 
 const app = async function() {
-  const ssi = await tydids.ssi(privateKey);
+  const ssi = await tydids.ssi(privateKey,reset);
   if(typeof options.verbose !== 'undefined') {
     out('TyDIDs P2P version',ssi.version);
   }
-  //await ssi.waitManagedCredentials();
-  if(typeof options.managedCredentials !== 'undefined') {
-      await ssi.waitManagedCredentials();
-      out(ssi.managedCredentials);
+  if(typeof options.presentation == 'undefined') {
+    ssi.emitter.on('payload:ethr:6226:'+ssi.identity.address,function(data) {
+      out(data);
+    });
   }
 
-  if(typeof options.jwtID !== 'undefined') {
-      out(await ssi.buildJWTDid(ssi.identity));
-  }
 
   if(typeof options.identity !== 'undefined') { out(ssi.identity); }
+  if((typeof options.set !== 'undefined') && (args.length == 2)) {
+    let addload = {}
+    addload[args[0]] = args[1];
+    let imutable = await ssi.updatePresentation(addload);
+    out("Revision",imutable.revision);
+  }
+
   if(typeof options.presentation !== 'undefined') {
     let outputPresentation = true;
     let presentation = await ssi.retrievePresentation(options.presentation);
-    // Add Delegation handling here!
-    if(typeof options.delegate !== 'undefined') {
-      ssi.emitter.on('delegation',function(data) {
-        out(data);
-      });
-
-      try {
-        let res = await ssi.delegate(options.presentation,options.delegate);
-        out(res);
-      } catch(e) {
-        out(e);
-      }
-    }
-    if(typeof options.writeTydidsJSON !== 'undefined') {
-      if(fs.existsSync('./.tydids.json')) {
-        let settings = JSON.parse(fs.readFileSync('./.tydids.json'));
-        settings.defaultDID = options.presentation
-        fs.writeFileSync('./.tydids.json',JSON.stringify(settings));
-      }
-    }
-
-    if((typeof options.ancestor !== 'undefined')) {
-      presentation._ancestor = options.ancestor;
-    }
-    if((typeof options.set !== 'undefined') && (args.length == 2)) {
-      presentation[args[0]] = args[1];
-      await ssi.updatePresentation(options.presentation,presentation);
-    }
-
     if(typeof options.verbose !== 'undefined') outputPresentation.true;
-
     if(outputPresentation) {
-      ssi.emitter.on('did:ethr:6226:'+options.presentation,function(data) {
+      ssi.emitter.on('payload:ethr:6226:'+options.presentation,function(data) {
         out(data);
       });
       out(presentation);
     }
   }
-  if(typeof options.createPresentation !== 'undefined') {
-    ssi.emitter.on('cMP',function(data) {
-      console.log(data);
-    });
-    let nssi = await ssi.createPresentation();
-    out(nssi);
-    if(typeof options.writeTydidsJSON !== 'undefined') {
-      if(fs.existsSync('./.tydids.json')) {
-      	let settings = JSON.parse(fs.readFileSync('./.tydids.json'));
-        settings.defaultDID = nssi.address;
-        fs.writeFileSync('./.tydids.json',JSON.stringify(settings));
-      }
-    }
-  }
+
   if(typeof options.exit !== 'undefined') { process.exit(0) }
 }
 if(openApp) {

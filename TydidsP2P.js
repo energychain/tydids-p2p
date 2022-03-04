@@ -197,7 +197,7 @@ const TydidsP2P = {
           await sleep(100);
           https.get(config.relays[i]+'/retrievePresentation?address='+identity.address,function(res) {});
         } catch(e) {
-          
+
         }
       }
 
@@ -258,6 +258,8 @@ const TydidsP2P = {
         emitter.emit("payload:ethr:6226:"+node.revision,_presentation.payload);
         emitter.emit("did:ethr:6226:"+identity.address,node);
         emitter.emit("did:ethr:6226:"+node.revision,node);
+        emitter.emit("presentation:ethr:6226:"+identity.address,_presentation);
+        emitter.emit("presentation:ethr:6226:"+node.revision,_presentation);
         emitter.emit("jwt:ethr:6226:"+identity.address,node.presentation);
         emitter.emit("jwt:ethr:6226:"+node.revision,node.presentation);
         return node;
@@ -286,6 +288,8 @@ const TydidsP2P = {
             emitter.emit("payload:ethr:6226:"+_revision,_p.payload);
             emitter.emit("did:ethr:6226:"+address,_node);
             emitter.emit("did:ethr:6226:"+_revision,_node);
+            emitter.emit("presentation:ethr:6226:"+address,_p);
+            emitter.emit("presentation:ethr:6226:"+_revision,_p);
             emitter.emit("jwt:ethr:6226:"+address,_node.presentation);
             emitter.emit("jwt:ethr:6226:"+_revision,_node.presentation);
           }

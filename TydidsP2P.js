@@ -284,7 +284,7 @@ const TydidsP2P = {
           const _p = await _resolveDid(_node.presentation);
           if(_p.payload.iat > _subs[hash]) {
             _subs[hash] = _p.payload.iat;
-            _p.jwt = node.presentation;
+            _p.jwt = _node.presentation;
             emitter.emit("payload:ethr:6226:"+address,_p.payload);
             emitter.emit("payload:ethr:6226:"+_revision,_p.payload);
             emitter.emit("did:ethr:6226:"+address,_node);

@@ -339,6 +339,7 @@ const TydidsP2P = {
       delegate:delegate,
       revoke:revoke,
       resolveDID:_resolveDid,
+      buildJWT:_buildJWTDid,
       version:VERSION
     }
   }

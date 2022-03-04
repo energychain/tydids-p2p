@@ -253,7 +253,7 @@ const TydidsP2P = {
         await _updateGraph();
 
         // send event
-
+        _presentation.jwt = node.presentation;
         emitter.emit("payload:ethr:6226:"+identity.address,_presentation.payload);
         emitter.emit("payload:ethr:6226:"+node.revision,_presentation.payload);
         emitter.emit("did:ethr:6226:"+identity.address,node);
@@ -284,6 +284,7 @@ const TydidsP2P = {
           const _p = await _resolveDid(_node.presentation);
           if(_p.payload.iat > _subs[hash]) {
             _subs[hash] = _p.payload.iat;
+            _p.jwt = node.presentation;
             emitter.emit("payload:ethr:6226:"+address,_p.payload);
             emitter.emit("payload:ethr:6226:"+_revision,_p.payload);
             emitter.emit("did:ethr:6226:"+address,_node);

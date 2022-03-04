@@ -338,6 +338,7 @@ const TydidsP2P = {
       retrieveDID:retrieveDID,
       delegate:delegate,
       revoke:revoke,
+      resolveDID:_resolveDid,
       version:VERSION
     }
   }

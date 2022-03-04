@@ -52,7 +52,8 @@ const TydidsP2P = {
       chainId: "6226",
       registry:"0xaC2DDf7488C1C2Dd1f8FFE36e207D8Fb96cF2fFB",
       abi:require("./EthereumDIDRegistry.abi.json"),
-      gunPeers:['https://webrtc.tydids.com/gun']
+      gunPeers:['https://webrtc.tydids.com/gun'],
+      relays:['https://webrtc.tydids.com/tydids/']
     }
 
     class Events extends EventEmitter {
@@ -190,9 +191,16 @@ const TydidsP2P = {
       gun.get(identity.address).get(node.revision).put(node);
       await retrievePresentation(identity.address);
       await retrievePresentation(identity.address,node.revision);
-      https.get('https://api.corrently.io/v2.0/idideal/devmode?account='+identity.address,function(res) {
+      for(let i=0;i<config.relays.length;i++) {
+        try {
+          https.get(config.relays[i]+'/retrievePresentation?address='+identity.address+'&revision='+node.revision,function(res) {});
+          await sleep(100);
+          https.get(config.relays[i]+'/retrievePresentation?address='+identity.address,function(res) {});
+        } catch(e) {
+          
+        }
+      }
 
-      });
     }
 
     const _inGraphRetrieveOnce = async function(address,_revision) {

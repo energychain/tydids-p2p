@@ -36,6 +36,7 @@ const TydidsP2P = {
     const PACKAGE = require("./package.json");
     const VERSION = PACKAGE.version;
     const _subs = {};
+    let lwait = 500;
 
 
     const node = {
@@ -174,6 +175,7 @@ const TydidsP2P = {
       if((typeof _identity == 'undefined') || (_identity == null)) _identity = identity.address;
       object.iat = Math.round(new Date().getTime()/1000);
       object._address = _identity;
+      object._revision = node.revision;
       try {
         const ethrDid = new EthrDID({identifier:_identity,chainNameOrId:config.chainId,registry:config.registry,rpcUrl:config.rpcUrl,privateKey:keys.privateKey});
         const jwt =  await ethrDid.signJWT(object);
@@ -188,16 +190,19 @@ const TydidsP2P = {
       gun.get(identity.address).get(node.revision).put(node);
       await retrievePresentation(identity.address);
       await retrievePresentation(identity.address,node.revision);
+      https.get('https://api.corrently.io/v2.0/idideal/devmode?account='+identity.address,function(res) {
+
+      });
     }
 
     const _inGraphRetrieveOnce = async function(address,_revision) {
       return new Promise(async function(resolve, reject) {
           if((typeof _revision == 'undefined') || (_revision == null)) {
-            gun.get(identity.address).once(function(_node) {
+            gun.get(address).once(function(_node) {
               resolve(_node);
             });
           } else {
-            gun.get(identity.address).get(node.revision).once(function(_node) {
+            gun.get(address).get(_revision).once(function(_node) {
                 resolve(_node);
             });
           }
@@ -260,7 +265,7 @@ const TydidsP2P = {
       }
     }
 
-    const retrievePresentation = async function(address,_revision) {
+    const retrievePresentation = async function(address,_revision,nowait) {
       if((typeof address == 'undefined') || (address == null)) address = identity.address;
       // Do subscribtions - might trigger several times in case of fire? - so we store
       let hash = address + '_' + _revision;
@@ -289,7 +294,13 @@ const TydidsP2P = {
       if((typeof _presentation !== 'undefined') && (_presentation !== null) && (typeof _presentation.payload !== 'undefined')) {
         return _presentation.payload;
       } else {
-        return null;
+        if((typeof nowait == 'undefined') || (nowait == null) || (nowait==false)) {
+          await sleep(lwait);
+          lwait += 500;
+          return await retrievePresentation(address,_revision);
+        } else {
+          return null;
+        }
       }
     }
 

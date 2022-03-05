@@ -52,7 +52,7 @@ const TydidsP2P = {
       chainId: "6226",
       registry:"0xaC2DDf7488C1C2Dd1f8FFE36e207D8Fb96cF2fFB",
       abi:require("./EthereumDIDRegistry.abi.json"),
-      gunPeers:['https://webrtc.tydids.com/gun'],
+      gunPeers:['https://webrtc.corrently.de/gun'],
       relays:['https://relay.tydids.com/tydids/']
     }
 

@@ -52,8 +52,8 @@ const TydidsP2P = {
       chainId: "6226",
       registry:"0xaC2DDf7488C1C2Dd1f8FFE36e207D8Fb96cF2fFB",
       abi:require("./EthereumDIDRegistry.abi.json"),
-      gunPeers:['https://webrtc.tydids.com/gun'],
-      relays:['https://webrtc.tydids.com/tydids/']
+      gunPeers:['http://relay.tydids.com:8888/gun'],
+      relays:['http://relay.tydids.com:8888/tydids/']
     }
 
     class Events extends EventEmitter {

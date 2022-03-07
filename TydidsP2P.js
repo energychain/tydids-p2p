@@ -225,12 +225,6 @@ const TydidsP2P = {
               }
             }
             let inGraph = await _inGraphRetrieveOnce(address,_revision);
-            /*
-            while((typeof inGraph == 'undefined')||(inGraph == null)) {
-              await sleep(2000);
-              inGraph = await _inGraphRetrieveOnce(address,_revision);
-            }
-            */
             resolve(inGraph)
       });
     }
@@ -262,7 +256,22 @@ const TydidsP2P = {
         emitter.emit("presentation:ethr:6226:"+node.revision,_presentation);
         emitter.emit("jwt:ethr:6226:"+identity.address,node.presentation);
         emitter.emit("jwt:ethr:6226:"+node.revision,node.presentation);
+
+        gun.get(address).get(node.revision).on(function(did) {
+          const _p = await _resolveDid(did);
+          _p.jwt = did;
+          _p.revision = node.revision;
+          emitter.emit("payload:reply",_p.payload);
+          emitter.emit("presentation:reply",_p);
+          emitter.emit("jwt:reply",did);
+        });
+
         return node;
+    }
+
+    const replyPresentation = async function(address,revision,reply) {
+      const did = await _buildJWTDid(reply);
+      gun.get(address).get(revision).put(did);
     }
 
     const retrieveDID = async function(address,_revision) {
@@ -318,11 +327,11 @@ const TydidsP2P = {
     }
 
     const delegate = async function(address) {
-
+        throw "Not implemented in this version."
     }
 
     const revoke = async function(address) {
-
+        throw "Not implemented in this version."
     }
 
     retrievePresentation();
@@ -340,6 +349,7 @@ const TydidsP2P = {
       revoke:revoke,
       resolveDID:_resolveDid,
       buildJWT:_buildJWTDid,
+      replyPresentation:replyPresentation,
       version:VERSION
     }
   }

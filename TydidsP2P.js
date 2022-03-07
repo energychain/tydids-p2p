@@ -23,7 +23,7 @@ const TydidsP2P = {
   ethers:ethers,
   encryptWithPublicKey:_encryptWithPublicKey,
   decryptWithPrivateKey:_decryptWithPrivateKey,
-  ssi:async function(privateKey,doReset,gun) {
+  ssi:async function(privateKey,doReset,gun,_listenServerPort,_peers) {
     if((typeof doReset == 'undefined') || (doReset == null)) { doReset = true; }
 
     if((typeof privateKey == 'undefined') || (privateKey == null)) {
@@ -112,10 +112,20 @@ const TydidsP2P = {
     const provider = new ethers.providers.JsonRpcProvider(config.rpcUrl);
     const wallet = new ethers.Wallet(privateKey,provider);
     const singingKey = new ethers.utils.SigningKey(privateKey);
+    let _gunOpts = {peers:config.gunPeers};
+    if((typeof _peers !== 'undefined') && (_peers !== null)) {
+      for(let i=0;i<_peers.length;i++) {
+        config.gunPeers.push(_peers[i]);
+      }
+    }
+    if((typeof _listenServerPort !== 'undefined') && ( _listenServerPort !== null)) {
+      const server = require('http').createServer().listen(_listenServerPort);
+      _gunOpts.web = server;
+    }
 
     if((typeof gun == 'undefined') || (gun == null)) {
       const Gun = require('gun');
-      gun = Gun({peers:config.gunPeers});
+      gun = Gun(_gunOpts);
       if(typeof gun.user == 'undefined') {
         if(typeof SEA !== 'undefined') {
           gun.user = SEA.GUN.User;
@@ -145,9 +155,8 @@ const TydidsP2P = {
     identity.gunEPublicKey = keys.gun.epub;
     node.identity = identity;
 
+
     // Internal Management
-
-
 
     let stats = {
       identity:{err:0,ok:0}
@@ -257,7 +266,7 @@ const TydidsP2P = {
         emitter.emit("jwt:ethr:6226:"+identity.address,node.presentation);
         emitter.emit("jwt:ethr:6226:"+node.revision,node.presentation);
 
-        gun.get(address).get(node.revision).on(function(did) {
+        gun.get(address).get(node.revision).on(async function(did) {
           const _p = await _resolveDid(did);
           _p.jwt = did;
           _p.revision = node.revision;

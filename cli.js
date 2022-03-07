@@ -17,6 +17,8 @@ program
   .option('-r --reset')
   .option('-v --verbose')
   .option('-s --set')
+  .option('--relay <port>')
+  .option('--peer <url>')
   .option('-w --writeTydidsJSON')
   .option('--createPrivateKey')
 
@@ -60,7 +62,13 @@ if(typeof options.reset !== 'undefined') reset = true;
 if(typeof options.presentation !== 'undefined') reset = true;
 
 const app = async function() {
-  const ssi = await tydids.ssi(privateKey,reset);
+  let port = options.relay;
+  let peers = null;
+  if(typeof options.peer !== 'undefined') {
+    peers = [options.peer];
+  }
+
+  const ssi = await tydids.ssi(privateKey,reset,null,port,peers);
   if(typeof options.verbose !== 'undefined') {
     out('TyDIDs P2P version',ssi.version);
   }

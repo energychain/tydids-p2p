@@ -266,7 +266,7 @@ const TydidsP2P = {
         emitter.emit("jwt:ethr:6226:"+identity.address,node.presentation);
         emitter.emit("jwt:ethr:6226:"+node.revision,node.presentation);
 
-        gun.get(address).get(node.revision).on(async function(did) {
+        gun.get(identity.address).get(node.revision).on(async function(did) {
           const _p = await _resolveDid(did);
           _p.jwt = did;
           _p.revision = node.revision;

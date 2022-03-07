@@ -17,6 +17,8 @@ program
   .option('-r --reset')
   .option('-v --verbose')
   .option('-s --set')
+  .option('-o --output <file>')
+  .option('-f --input <file>')
   .option('--relay <port>')
   .option('--peer <url>')
   .option('-w --writeTydidsJSON')
@@ -86,14 +88,33 @@ const app = async function() {
     let imutable = await ssi.updatePresentation(addload);
     out("Revision",imutable.revision);
   }
-
+  if(typeof options.input !== 'undefined') {
+    const storeFile = async function() {
+      let data = JSON.parse(fs.readFileSync(options.input));
+      let imutable = await ssi.updatePresentation(data);
+      out("Revision",imutable.revision);
+    }
+    const fs = require("fs");
+    fs.watchFile(options.input,(curr, prev) => {
+      storeFile();
+    });
+    storeFile();
+  }
   if(typeof options.presentation !== 'undefined') {
     let outputPresentation = true;
     let presentation = await ssi.retrievePresentation(options.presentation);
     if(typeof options.verbose !== 'undefined') outputPresentation.true;
     if(outputPresentation) {
+      if(typeof options.output !== 'undefined') {
+        const fs = require("fs");
+        fs.writeFileSync(options.output, JSON.stringify(presentation));
+      }
       ssi.emitter.on('payload:ethr:6226:'+options.presentation,function(data) {
         out(data);
+        if(typeof options.output !== 'undefined') {
+          const fs = require("fs");
+          fs.writeFileSync(options.output, JSON.stringify(data));
+        }
       });
       out(presentation);
     }

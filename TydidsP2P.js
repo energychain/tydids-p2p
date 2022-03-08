@@ -122,8 +122,8 @@ const TydidsP2P = {
       const server = require('http').createServer().listen(_listenServerPort);
       _gunOpts.web = server;
     }
-    _gunOpts.file = radata+wallet.address;
-    
+    _gunOpts.file ="radata_"+wallet.address;
+
     if((typeof gun == 'undefined') || (gun == null)) {
       const Gun = require('gun');
       gun = Gun(_gunOpts);

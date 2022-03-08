@@ -272,8 +272,11 @@ const TydidsP2P = {
         if(typeof _cbRcvdACK == 'function') {
             gun.get(_revision).get('ack').on(function(ack) {
                 gun.get(_revision).get('ack').map(async function(_node,from) {
-                  let did = await _resolveDid(_node.did);
-                  _cbRcvdACK(from,did);
+                  if(typeof _subs[_node.revision+':'+from] == 'undefined') {
+                    _subs[_node.revision+':'+from] = new Date().getTime();
+                    let did = await _resolveDid(_node.did);
+                    _subs[_node.revision+':'+from] = await _cbRcvdACK(from,did);
+                  }
                 });
             });
             setTimeout(function() {
@@ -352,8 +355,6 @@ const TydidsP2P = {
         throw "Not implemented in this version."
     }
 
-    retrievePresentation();
-
     const onReceivedACK = function(fct) {
       _cbRcvdACK = fct;
     }
@@ -361,6 +362,10 @@ const TydidsP2P = {
     const onACK = function(fct) {
       _cbACK = fct;
     }
+
+    retrievePresentation();
+
+
     return {
       wallet: wallet,
       identity: identity,

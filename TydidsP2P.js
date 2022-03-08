@@ -185,17 +185,19 @@ const TydidsP2P = {
     }
 
     const _buildJWTDid = async function(object,_identity) {
-      if((typeof _identity == 'undefined') || (_identity == null)) _identity = identity.address;
-      object.iat = Math.round(new Date().getTime()/1000);
-      object._address = _identity;
-      object._revision = node.revision;
-      try {
-        const ethrDid = new EthrDID({identifier:_identity,chainNameOrId:config.chainId,registry:config.registry,rpcUrl:config.rpcUrl,privateKey:keys.privateKey});
-        const jwt =  await ethrDid.signJWT(object);
-        return jwt;
-      } catch(e) {
-        console.log('_buildJWTDid',e);
-      }
+      if((typeof object == 'undefined') || (object == null)) object = {}; 
+        if((typeof _identity == 'undefined') || (_identity == null)) _identity = identity.address;
+        object.iat = Math.round(new Date().getTime()/1000);
+        object._address = _identity;
+        object._revision = node.revision;
+        try {
+          const ethrDid = new EthrDID({identifier:_identity,chainNameOrId:config.chainId,registry:config.registry,rpcUrl:config.rpcUrl,privateKey:keys.privateKey});
+          const jwt =  await ethrDid.signJWT(object);
+          return jwt;
+        } catch(e) {
+          console.log('_buildJWTDid',e);
+        }
+
     }
 
     const _updateGraph = async function() {

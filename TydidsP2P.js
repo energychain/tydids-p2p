@@ -282,6 +282,7 @@ const TydidsP2P = {
     const replyPresentation = async function(address,revision,reply) {
       const did = await _buildJWTDid(reply);
       gun.get(address).get(revision).get("reply").put(did);
+      gun.get(address).get("reply").put(did)
     }
 
     const retrieveDID = async function(address,_revision) {
@@ -345,6 +346,16 @@ const TydidsP2P = {
     }
 
     retrievePresentation();
+
+    gun.get(identity.address).get("reply").on(async function(did) {
+      const _p = await _resolveDid(did);
+      _p.jwt = did;
+      _p.revision = node.revision;
+      emitter.emit("payload:reply",_p.payload);
+      emitter.emit("presentation:reply",_p);
+      emitter.emit("jwt:reply",did);
+    });
+
 
     return {
       wallet: wallet,

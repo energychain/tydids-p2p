@@ -280,6 +280,7 @@ const TydidsP2P = {
     }
 
     const replyPresentation = async function(address,revision,reply) {
+      console.log('Reply',address,revision);
       const did = await _buildJWTDid(reply);
       gun.get(address).get(revision).get("reply").put(did);
       gun.get(address).get("reply").put(did)
@@ -348,6 +349,7 @@ const TydidsP2P = {
     retrievePresentation();
 
     gun.get(identity.address).get("reply").on(async function(did) {
+      console.log("Hallo",did);
       const _p = await _resolveDid(did);
       _p.jwt = did;
       _p.revision = node.revision;

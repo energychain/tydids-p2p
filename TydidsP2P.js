@@ -37,7 +37,9 @@ const TydidsP2P = {
     const VERSION = PACKAGE.version;
     const _subs = {};
     let lwait = 500;
-
+    const _WAITACK = 60000; // how long to wait for ACK message
+    let _cbACK = null;
+    let _cbRcvdACK = null;
 
     const node = {
       presentation:null,
@@ -266,14 +268,19 @@ const TydidsP2P = {
         emitter.emit("presentation:ethr:6226:"+node.revision,_presentation);
         emitter.emit("jwt:ethr:6226:"+identity.address,node.presentation);
         emitter.emit("jwt:ethr:6226:"+node.revision,node.presentation);
-
+        const _revision = '' + node.ancestor;
+        if(typeof _cbRcvdACK == 'function') {
+            gun.get(_revision).get('ack').on(function(ack) {
+                gun.get(_revision).get('ack').map(async function(_node,from) {
+                  let did = await _resolveDid(_node.did);
+                  _cbRcvdACK(from,did);
+                });
+            });
+            setTimeout(function() {
+              gun.get(_revision).get('ack').off();
+            },_WAITACK);
+        }
         return node;
-    }
-
-    const replyPresentation = async function(address,revision,reply) {
-      console.log('Reply',address,revision);
-      const did = await _buildJWTDid(reply);
-      gun.get(address).get("reply").put(did)
     }
 
     const retrieveDID = async function(address,_revision) {
@@ -304,7 +311,16 @@ const TydidsP2P = {
             emitter.emit("presentation:ethr:6226:"+_revision,_p);
             emitter.emit("jwt:ethr:6226:"+address,_node.presentation);
             emitter.emit("jwt:ethr:6226:"+_revision,_node.presentation);
+            if(address !== identity.address) {
+              let _did = {iat:identity.address};
+              if(typeof _cbACK == 'function') {
+                _did = _cbACK(_p);
+              }
+              const ack = await _buildJWTDid(_did); // here we might add a Reply Callback!
+              gun.get(_p.payload._revision).get('ack').get(identity.address).put({did:ack});
+            }
           }
+
         }
         _subs[hash] = Math.round(new Date().getTime()/1000);
         gun.get(address).on(function(_node) {
@@ -338,17 +354,13 @@ const TydidsP2P = {
 
     retrievePresentation();
 
-    gun.get(identity.address).get("reply").on(async function(did) {
-      console.log("Hallo",did);
-      const _p = await _resolveDid(did);
-      _p.jwt = did;
-      _p.revision = node.revision;
-      emitter.emit("payload:reply",_p.payload);
-      emitter.emit("presentation:reply",_p);
-      emitter.emit("jwt:reply",did);
-    });
+    const onReceivedACK = function(fct) {
+      _cbRcvdACK = fct;
+    }
 
-
+    const onACK = function(fct) {
+      _cbACK = fct;
+    }
     return {
       wallet: wallet,
       identity: identity,
@@ -362,8 +374,9 @@ const TydidsP2P = {
       revoke:revoke,
       resolveDID:_resolveDid,
       buildJWT:_buildJWTDid,
-      replyPresentation:replyPresentation,
-      version:VERSION
+      version:VERSION,
+      onReceivedACK:onReceivedACK,
+      onACK:onACK
     }
   }
 }

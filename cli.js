@@ -73,6 +73,13 @@ const app = async function() {
   const ssi = await tydids.ssi(privateKey,reset,null,port,peers);
   if(typeof options.verbose !== 'undefined') {
     out('TyDIDs P2P version',ssi.version);
+    ssi.onACK (function(_presentation) {
+      out('ACK',_presentation.payload._revision);
+      return {pong:new Date().getTime()};
+    });
+    ssi.onReceivedACK(function(from,did) {
+      out('ACKRcpt',from);
+    });
   }
   if(typeof options.presentation == 'undefined') {
     ssi.emitter.on('payload:ethr:6226:'+ssi.identity.address,function(data) {

@@ -273,7 +273,6 @@ const TydidsP2P = {
     const replyPresentation = async function(address,revision,reply) {
       console.log('Reply',address,revision);
       const did = await _buildJWTDid(reply);
-      gun.get(address).get(revision).get("reply").put(did);
       gun.get(address).get("reply").put(did)
     }
 

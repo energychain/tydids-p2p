@@ -23,7 +23,7 @@ const TydidsP2P = {
   ethers:ethers,
   encryptWithPublicKey:_encryptWithPublicKey,
   decryptWithPrivateKey:_decryptWithPrivateKey,
-  ssi:async function(privateKey,doReset,gun,_listenServerPort,_peers) {
+  ssi:async function(privateKey,doReset,gun,_listenServerPort,_peers,config) {
     if((typeof doReset == 'undefined') || (doReset == null)) { doReset = true; }
 
     if((typeof privateKey == 'undefined') || (privateKey == null)) {
@@ -48,14 +48,16 @@ const TydidsP2P = {
       ancestor:null,
       identity:null
     }
-    const config = {
-      rpcUrl: "https://rpc.tydids.com/",
-      name: "mainnet",
-      chainId: "6226",
-      registry:"0xaC2DDf7488C1C2Dd1f8FFE36e207D8Fb96cF2fFB",
-      abi:require("./EthereumDIDRegistry.abi.json"),
-      gunPeers:['http://relay2.tydids.com:8888/gun'],
-      relays:[]
+    if((typeof config == 'undefined') || (config == null)) {
+      config = {
+        rpcUrl: "https://rpc2.tydids.com/",
+        name: "mainnet",
+        chainId: "6226",
+        registry:"0xaC2DDf7488C1C2Dd1f8FFE36e207D8Fb96cF2fFB",
+        abi:require("./EthereumDIDRegistry.abi.json"),
+        gunPeers:['http://relay2.tydids.com:8888/gun'],
+        relays:[]
+      }
     }
 
     class Events extends EventEmitter {
@@ -166,7 +168,9 @@ const TydidsP2P = {
     }
 
     // Internal Functions
-    const _resolveDid = async function(jwt) {
+    const _resolveDid = async function(jwt,_rtry) {
+      if((typeof _rtry == 'undefined') || (_rtry == null)) _rtry = 0;
+
        try {
         if((typeof jwt !== 'string') || (jwt.substr(0,2) !== 'ey')) {
             return {payload:{}};
@@ -178,14 +182,23 @@ const TydidsP2P = {
           return did;
         }
       } catch(e) {
-        console.log('_resolveDid - Master Caution',e);
-        let res = jsontokens.decodeToken(jwt)
-        return res;
+        if(config.rpcUrl == "https://rpc2.tydids.com/") {
+          config.rpcUrl = "https://rpc.tydids.com/";
+        } else {
+          config.rpcUrl = "https://rpc2.tydids.com/";
+        }
+        if(_rtry == 0) {
+          return await _resolveDid(jwt,_rtry++);
+        } else {
+          console.log('_resolveDid - Master Caution',e);
+          let res = jsontokens.decodeToken(jwt)
+          return res;
+        }
       }
     }
 
     const _buildJWTDid = async function(object,_identity) {
-      if((typeof object == 'undefined') || (object == null)) object = {}; 
+      if((typeof object == 'undefined') || (object == null)) object = {};
         if((typeof _identity == 'undefined') || (_identity == null)) _identity = identity.address;
         object.iat = Math.round(new Date().getTime()/1000);
         object._address = _identity;
@@ -365,6 +378,10 @@ const TydidsP2P = {
       _cbACK = fct;
     }
 
+   const setIdentifier = function(address) {
+     identity.address = address;
+   }
+
     retrievePresentation();
 
 
@@ -383,7 +400,8 @@ const TydidsP2P = {
       buildJWT:_buildJWTDid,
       version:VERSION,
       onReceivedACK:onReceivedACK,
-      onACK:onACK
+      onACK:onACK,
+      setIdentifier:setIdentifier
     }
   }
 }

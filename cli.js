@@ -126,7 +126,10 @@ const app = async function() {
       out(presentation);
     }
   }
-
+  if(typeof options.delegate !== 'undefined') {
+    let res = await ssi.delegate(options.delegate);
+    out(res);
+  }
   if(typeof options.exit !== 'undefined') { process.exit(0) }
 }
 if(openApp) {

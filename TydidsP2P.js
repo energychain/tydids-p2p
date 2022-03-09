@@ -362,12 +362,21 @@ const TydidsP2P = {
       }
     }
 
-    const delegate = async function(address) {
-        throw "Not implemented in this version."
+    const delegate = async function(to,duration) {
+      if((typeof duration == 'undefined')||(duration==null)) duration = 3600;
+
+      const provider = new ethers.providers.JsonRpcProvider(config.rpcUrl);
+      const wallet = new ethers.Wallet(privateKey,provider);
+
+      const registry = new ethers.Contract( config.registry , config.abi , wallet );
+      return await registry.addDelegate(identity.address,"0x766572694b657900000000000000000000000000000000000000000000000000",to,duration);
     }
 
-    const revoke = async function(address) {
-        throw "Not implemented in this version."
+    const revoke = async function(to) {
+      const provider = new ethers.providers.JsonRpcProvider(config.rpcUrl);
+      const wallet = new ethers.Wallet(privateKey,provider);
+      const registry = new ethers.Contract( config.registry , config.abi , wallet );
+      return await registry.revokeDelegate(identity.address,"0x766572694b657900000000000000000000000000000000000000000000000000",to);
     }
 
     const onReceivedACK = function(fct) {

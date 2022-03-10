@@ -88,7 +88,9 @@ const app = async function() {
   }
 
 
-  if(typeof options.identity !== 'undefined') { out(ssi.identity); }
+  if(typeof options.identity !== 'undefined') {
+    out(ssi.identity); 
+  }
   if((typeof options.set !== 'undefined') && (args.length == 2)) {
     let addload = {}
     addload[args[0]] = args[1];

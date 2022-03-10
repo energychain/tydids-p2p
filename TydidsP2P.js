@@ -290,7 +290,7 @@ const TydidsP2P = {
                   if(typeof _subs[_node.revision+':'+from] == 'undefined') {
                     _subs[_node.revision+':'+from] = new Date().getTime();
                     let did = await _resolveDid(_node.did);
-                    _subs[_node.revision+':'+from] = await _cbRcvdACK(from,did);
+                    _subs[_node.revision+':'+from] = await _cbRcvdACK(from,did,_node.revision);
                   }
                 });
             });
@@ -410,7 +410,8 @@ const TydidsP2P = {
       version:VERSION,
       onReceivedACK:onReceivedACK,
       onACK:onACK,
-      setIdentifier:setIdentifier
+      setIdentifier:setIdentifier,
+      node:node
     }
   }
 }

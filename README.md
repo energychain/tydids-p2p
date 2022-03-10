@@ -6,6 +6,7 @@
 
 [![npm](https://img.shields.io/npm/dt/tydids-p2p.svg)](https://www.npmjs.com/package/tydids-p2p)
 [![npm](https://img.shields.io/npm/v/tydids-p2p.svg)](https://www.npmjs.com/package/tydids-p2p)
+[![Codeship Status for energychain/tydids-p2p](https://app.codeship.com/projects/eaa42f7a-bf97-4807-9fc0-f1c8a7930ddf/status?branch=master)](https://app.codeship.com/projects/456591)
 [![CO2Offset](https://api.corrently.io/v2.0/ghgmanage/statusimg?host=tydids-p2p&svg=1)](https://co2offset.io/badge.html?host=tydids-p2p)
 [![Join the chat at https://gitter.im/stromdao/tydids-p2p](https://badges.gitter.im/stromdao/tydids-p2p.svg)](https://gitter.im/stromdao/tydids-p2p?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 

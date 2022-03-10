@@ -8,7 +8,7 @@
 [![npm](https://img.shields.io/npm/v/tydids-p2p.svg)](https://www.npmjs.com/package/tydids-p2p)
 [![CO2Offset](https://api.corrently.io/v2.0/ghgmanage/statusimg?host=tydids-p2p&svg=1)](https://co2offset.io/badge.html?host=tydids-p2p)
 
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/energychain/tydids-p2p)
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/energychain/tydids-p2p) [![Join the chat at https://gitter.im/stromdao/tydids-p2p](https://badges.gitter.im/stromdao/tydids-p2p.svg)](https://gitter.im/stromdao/tydids-p2p?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![CodePen]((https://img.shields.io/badge/Codepen-000000?style=for-the-badge&logo=codepen&logoColor=white))](https://codepen.io/zoernert/pen/wvPmOvw)
 
 Imagine a dataset that is available somewhere in the world might be accessed everywhere. How? You just need to know its address.

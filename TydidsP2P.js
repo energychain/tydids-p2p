@@ -40,6 +40,7 @@ const TydidsP2P = {
     const _WAITACK = 60000; // how long to wait for ACK message
     let _cbACK = null;
     let _cbRcvdACK = null;
+    const instanceID = MAth.random();
 
     const node = {
       presentation:null,
@@ -131,7 +132,7 @@ const TydidsP2P = {
       const server = require('http').createServer().listen(_listenServerPort);
       _gunOpts.web = server;
     }
-    _gunOpts.file ="radata_"+wallet.address;
+    _gunOpts.file ="radata_"+wallet.address+"_"+instanceID;
 
     if((typeof gun == 'undefined') || (gun == null)) {
       const Gun = require('gun');

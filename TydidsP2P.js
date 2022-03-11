@@ -73,51 +73,55 @@ const TydidsP2P = {
     }
 
     const loginUserGun = function(username,password) {
-      return new Promise(async function(resolve, reject) {
-        user.auth(username, password, async function(ack){
-          if(typeof ack.err !== 'undefined') {
-            try {
-              user.create(username,password,async function(ack2) {
-                if(typeof ack2.err !== 'undefined') {
-                  reject(ack2.err);
-                } else {
-                  resolve(await loginUserGun(username,password));
-                }
-              });
-            } catch(e) {
-                await sleep(500);
+    return new Promise(async function(resolve, reject) {
+      user.auth(username, password, async function(ack){
+        if(typeof ack.err !== 'undefined') {
+          try {
+      if(ack.err == 'Wrong user or password.') {
+        username += '_'+instanceID;
+      }
+            user.create(username,password,async function(ack2) {
+      await sleep(200);
+              if(typeof ack2.err !== 'undefined') {
+                reject(ack2.err);
+              } else {
                 resolve(await loginUserGun(username,password));
-            }
-          } else {
-            user.recall();
-            if(doReset) {
-              node.presentation = "";
-              node.revision = identity.address;
-              node.successor = _getRandomAddress();
-              node.ancestor = null;
-              resolve(node);
-            } else {
-              gun.get(identity.address).once(function(_node) {
-                try {
-                  node.presentation = _node.presentation;
-                  node.revision = _node.revision;
-                  node.successor = _node.successor;
-                  node.ancestor = _node.ancestor;
-                  node.identity = identity;
-                  resolve(node);
-                } catch(e) {
-                  node.presentation = "";
-                  node.revision = identity.address;
-                  node.successor = _getRandomAddress();
-                  node.ancestor = null;
-                  resolve(node);
-                }
-              });
-            }
+              }
+            });
+          } catch(e) {
+              await sleep(500);
+              resolve(await loginUserGun(username,password));
           }
-        });
+        } else {
+          user.recall();
+          if(doReset) {
+            node.presentation = "";
+            node.revision = identity.address;
+            node.successor = _getRandomAddress();
+            node.ancestor = null;
+            resolve(node);
+          } else {
+            gun.get(identity.address).once(function(_node) {
+              try {
+                node.presentation = _node.presentation;
+                node.revision = _node.revision;
+                node.successor = _node.successor;
+                node.ancestor = _node.ancestor;
+                node.identity = identity;
+                resolve(node);
+              } catch(e) {
+                node.presentation = "";
+                node.revision = identity.address;
+                node.successor = _getRandomAddress();
+                node.ancestor = null;
+                resolve(node);
+              }
+            });
+          }
+        }
       });
-    }
+    });
+  }
 
     const provider = new ethers.providers.JsonRpcProvider(config.rpcUrl);
     const wallet = new ethers.Wallet(privateKey,provider);

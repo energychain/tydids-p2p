@@ -40,7 +40,7 @@ const TydidsP2P = {
     const _WAITACK = 60000; // how long to wait for ACK message
     let _cbACK = null;
     let _cbRcvdACK = null;
-    const instanceID = MAth.random();
+    const instanceID = Math.random();
 
     const node = {
       presentation:null,

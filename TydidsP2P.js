@@ -73,8 +73,9 @@ const TydidsP2P = {
 
     const loginUserGun = function(username,password) {
       return new Promise(async function(resolve, reject) {
-        user.auth(username, password, function(ack){
+        user.auth(username, password, async function(ack){
           if(typeof ack.err !== 'undefined') {
+            try {
               user.create(username,password,async function(ack2) {
                 if(typeof ack2.err !== 'undefined') {
                   reject(ack2.err);
@@ -82,6 +83,10 @@ const TydidsP2P = {
                   resolve(await loginUserGun(username,password));
                 }
               });
+            } catch(e) {
+                await sleep(500);
+                resolve(await loginUserGun(username,password));
+            }
           } else {
             user.recall();
             if(doReset) {

@@ -334,9 +334,11 @@ const TydidsP2P = {
               if(typeof _cbACK == 'function') {
                 _did = _cbACK(_p);
               }
-              _did._revision = _p.payload._revision;
-              const ack = await _buildJWTDid(_did); // here we might add a Reply Callback!
-              gun.get(_p.payload._revision).get('ack').get(identity.address).put({did:ack});
+              if(typeof _did !== 'undefined') {
+                _did._revision = _p.payload._revision;
+                const ack = await _buildJWTDid(_did); // here we might add a Reply Callback!
+                gun.get(_p.payload._revision).get('ack').get(identity.address).put({did:ack});
+              }
             }
           }
 

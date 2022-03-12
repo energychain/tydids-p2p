@@ -9,7 +9,8 @@
   "scripts": {
     "cli": "node cli.js",
     "test": "mocha --exit",
-    "build": "node_modules/.bin/browserify -s TydidsP2P -o ./dist/TydidsP2P.js ./TydidsP2P.js"
+    "build": "node_modules/.bin/browserify -s TydidsP2P -o ./dist/TydidsP2P.js ./TydidsP2P.js",
+    "test": "mocha"
   },
   "repository": {
     "type": "git",
@@ -30,8 +31,8 @@
     "url": "https://github.com/energychain/tydids-p2p/issues"
   },
   "engines": {
-      "node": ">=14.0.0"
-   },
+    "node": ">=14.0.0"
+  },
   "homepage": "https://github.com/energychain/tydids-p2p#readme",
   "dependencies": {
     "@peculiar/webcrypto": "^1.2.3",
@@ -51,7 +52,7 @@
   },
   "devDependencies": {
     "browserify": "^17.0.0",
-    "mocha": "^9.2.0",
+    "mocha": "^9.2.2",
     "uglifyify": "^5.0.2"
   }
 }

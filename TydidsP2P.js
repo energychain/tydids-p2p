@@ -23,6 +23,10 @@ const TydidsP2P = {
   ethers:ethers,
   encryptWithPublicKey:_encryptWithPublicKey,
   decryptWithPrivateKey:_decryptWithPrivateKey,
+  createPrivateKey:function() {
+      const wallet = ethers.Wallet.createRandom();
+      return wallet.privateKey;
+  },
   ssi:async function(privateKey,doReset,gun,_listenServerPort,_peers,config) {
     if((typeof doReset == 'undefined') || (doReset == null)) { doReset = true; }
 
@@ -406,7 +410,10 @@ const TydidsP2P = {
 
     retrievePresentation();
 
-
+    if(doReset) {
+      await updatePresentation({});
+    }
+    
     return {
       wallet: wallet,
       identity: identity,

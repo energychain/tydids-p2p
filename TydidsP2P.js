@@ -342,7 +342,7 @@ const TydidsP2P = {
             if(address !== identity.address) {
               let _did = {iat:identity.address};
               if(typeof _cbACK == 'function') {
-                _did = _cbACK(_p);
+                _did = await _cbACK(_p);
               }
               if(typeof _did !== 'undefined') {
                 _did._revision = _p.payload._revision;

@@ -304,7 +304,7 @@ const TydidsP2P = {
                   if(typeof _subs[_node.revision+':'+from] == 'undefined') {
                     _subs[_node.revision+':'+from] = new Date().getTime();
                     let did = await _resolveDid(_node.did);
-                    _subs[_node.revision+':'+from] = await _cbRcvdACK(from,did,_node.revision);
+                    _subs[_node.revision+':'+from] = await _cbRcvdACK(from,did,did.payload._reference);
                   }
                 });
             });
@@ -349,7 +349,7 @@ const TydidsP2P = {
                 _did = await _cbACK(_p);
               }
               if(typeof _did !== 'undefined') {
-                _did._revision = _p.payload._revision;
+                _did._reference = _p.payload._revision;
                 const ack = await _buildJWTDid(_did); // here we might add a Reply Callback!
                 gun.get(_p.payload._revision).get('ack').get(identity.address).put({did:ack});
               }
@@ -413,7 +413,7 @@ const TydidsP2P = {
     if(doReset) {
       await updatePresentation({});
     }
-    
+
     return {
       wallet: wallet,
       identity: identity,

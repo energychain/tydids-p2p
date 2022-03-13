@@ -87,7 +87,31 @@ describe('MicroService P2P Communication', function () {
       while(resultB.payload.result == oldSum) {
         await sleep(200);
       }
-      assert.equal(resultB.payload.result,A+B);  
+      assert.equal(resultB.payload.result,A+B);
+    });
+    it('Optimized Wait (Expect Revision)', async function () {
+      assert.notEqual(resultB,null);
+      assert.equal(resultC,null);
+      const oldSum = resultB.payload.result;
+      let A = Math.round(Math.random()*1000);
+      let B = Math.round(Math.random()*1000);
+
+      // UpdateReceivedACK Handler to give revision (we only want a result - no matter which servive provides it)
+      let results = {};
+
+      instanceA.onReceivedACK(function(from,did,reference) {
+          results[reference] = did;
+      });
+
+      let res = await instanceA.updatePresentation({
+        A:A,
+        B:B
+      });
+      // wait for result update
+      while(typeof results[res.ancestor] == 'undefined') {
+        await sleep(200);
+      }
+      assert.equal(results[res.ancestor].payload.result,A+B);
     });
   });
 });

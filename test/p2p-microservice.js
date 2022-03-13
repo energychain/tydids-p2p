@@ -18,16 +18,19 @@ describe('MicroService P2P Communication', function () {
     delete instanceB;
     delete instanceC;
     await sleep(500);
-     process.exit(0)
+     // process.exit(0)
   });
   describe('#identity', async function () {
     it('Create Identities', async function () {
       const instanceA_PrivateKey = TyDIDs.createPrivateKey();
       const instanceB_PrivateKey = TyDIDs.createPrivateKey();
       const instanceC_PrivateKey = TyDIDs.createPrivateKey();
+      const log = console.log;
+      console.log = function() {};
       instanceA = await TyDIDs.ssi(instanceA_PrivateKey,true);
       instanceB = await TyDIDs.ssi(instanceB_PrivateKey,true);
       instanceC = await TyDIDs.ssi(instanceC_PrivateKey,true);
+      console.log = log;
       assert.notEqual(instanceA.identity.address,instanceB.identity.address);
     });
     it('Setup MicroService, listen to Consumer', async function () {

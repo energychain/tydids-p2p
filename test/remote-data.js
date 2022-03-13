@@ -9,11 +9,14 @@ describe('Remote Object', function () {
   after(async function() {
     delete instanceA;
     await sleep(500);
-     process.exit(0)
+    // process.exit(0)
   });
   it('Create Identity', async function () {
     const instanceA_PrivateKey = TyDIDs.createPrivateKey();
+    const log = console.log;
+    console.log = function() {};
     instanceA = await TyDIDs.ssi(instanceA_PrivateKey,true);
+    console.log = log;
   });
   it('Retrieve well known updated presentation', async function () {
     let res = await instanceA.retrievePresentation(remote_address);

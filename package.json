@@ -8,7 +8,7 @@
   },
   "scripts": {
     "cli": "node cli.js",
-    "test": "mocha --exit",
+    "test": "mocha test/*.js --exit",
     "build": "node_modules/.bin/browserify -s TydidsP2P -o ./dist/TydidsP2P.js ./TydidsP2P.js",
     "test": "mocha"
   },

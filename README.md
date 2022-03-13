@@ -56,6 +56,8 @@ app();
 
 ## [CONTRIBUTING](https://github.com/energychain/tydids-p2p/blob/main/CONTRIBUTING.md)
 
+## [CODE OF CONDUCT](https://github.com/energychain/tydids-p2p/blob/main/CODE_OF_CONDUCT.md)
+
 
 ## Maintainer / Imprint
 

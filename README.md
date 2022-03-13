@@ -54,6 +54,9 @@ app();
 
 ```
 
+## [CONTRIBUTING](https://github.com/energychain/tydids-p2p/blob/main/CONTRIBUTING.md)
+
+
 ## Maintainer / Imprint
 
 <addr>

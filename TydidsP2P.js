@@ -163,6 +163,7 @@ const TydidsP2P = {
 
     const identity = {
       address:keys.address,
+      owner:keys.address,
       publicKey:keys.publicKey,
       id:"did:ethr:6226:"+keys.address
     };

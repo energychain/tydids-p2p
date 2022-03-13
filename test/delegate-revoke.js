@@ -14,7 +14,7 @@ describe('Delegate and Revoke', function () {
   let instanceC = null; //  Will become Consumer
 
   let result = null;  // will Hold last presentation for Consumer;
-  let resultDid = null; // will Hold full did to validate
+  let lastRevision = null;
 
   let addressB = null;
   let addressA = null;
@@ -84,11 +84,37 @@ describe('Delegate and Revoke', function () {
       // Performe update
       await instanceB.updatePresentation({timestamp:new Date().getTime()});
       await sleep(200);
-
     });
     it('Validate at C', async function () {
       assert.equal(result.payload._address,addressA);
-      assert.equal(result.signer.blockchainAccountId,addressB+'@eip155:6226'); // Signed by is still B - However it looks like from A  
+      assert.equal(result.signer.blockchainAccountId,addressB+'@eip155:6226'); // Signed by is still B - However it looks like from A
+      lastRevision = result.payload._revision // We remember this as this will be last valid update.
+    });
+    it('Revoke from A to B', async function () {
+      await instanceA.revoke(instanceB.identity.owner);
+      await sleep(200);
+    });
+    it('Validate Revoke at C (no effect due to no presentation update)', async function () {
+      assert.equal(result.payload._address,addressA);
+      assert.equal(result.signer.blockchainAccountId,addressB+'@eip155:6226'); // Signed by is still B - However it looks like from A
+    });
+    it('Let A update presentation (should work)', async function () {
+      // Perform first Update
+      result = null;
+      await instanceA.updatePresentation({timestamp:new Date().getTime()});
+
+      // Wait for our update to be detected by C
+      while(result == null) {
+        await sleep(200);
+      }
+
+      assert.equal(result.payload._address,addressA);
+      assert.equal(result.signer.blockchainAccountId,addressA+'@eip155:6226');
+    });
+    it('Validate at C', async function () {
+      assert.equal(result.payload._address,addressA);
+      assert.equal(result.signer.blockchainAccountId,addressA+'@eip155:6226'); // Signed by is still B - However it looks like from A
+      assert.notEqual(lastRevision,result.payload._revision);
     });
   });
   //

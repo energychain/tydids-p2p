@@ -17,6 +17,8 @@ program
   .option('-r --reset')
   .option('-v --verbose')
   .option('-s --set')
+  .option('-T --timeout <milliseconds>')
+  .option('-H --history <address>')
   .option('-o --output <file>')
   .option('-f --input <file>')
   .option('--relay <port>')
@@ -89,7 +91,7 @@ const app = async function() {
 
 
   if(typeof options.identity !== 'undefined') {
-    out(ssi.identity); 
+    out(ssi.identity);
   }
   if((typeof options.set !== 'undefined') && (args.length == 2)) {
     let addload = {}
@@ -108,6 +110,14 @@ const app = async function() {
       storeFile();
     });
     storeFile();
+  }
+  if(typeof options.history !== 'undefined') {
+      let history = await ssi.retrieveRevisions(options.history,options.timeout,true);
+      for(let i=0;i<history.length;i++) {
+        if((typeof history[i] !== 'undefined') && (typeof history[i].did !== 'undefined')) {
+          out(history[i].did.payload);
+        }
+      }
   }
   if(typeof options.presentation !== 'undefined') {
     let outputPresentation = true;

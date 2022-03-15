@@ -60,7 +60,7 @@ const TydidsP2P = {
         chainId: "6226",
         registry:"0xaC2DDf7488C1C2Dd1f8FFE36e207D8Fb96cF2fFB",
         abi:require("./EthereumDIDRegistry.abi.json"),
-        gunPeers:['http://relay2.tydids.com:8888/gun'],
+        gunPeers:['https://relay.tydids.com/gun'],
         relays:[]
       }
     }
@@ -231,6 +231,7 @@ const TydidsP2P = {
     const _updateGraph = async function() {
       gun.get(identity.address).put(node);
       gun.get(identity.address).get(node.revision).put(node);
+      gun.get(node.revision).put(node);
       await retrievePresentation(identity.address);
       await retrievePresentation(identity.address,node.revision);
       for(let i=0;i<config.relays.length;i++) {
@@ -245,16 +246,24 @@ const TydidsP2P = {
 
     }
 
-    const _inGraphRetrieveOnce = async function(address,_revision) {
+    const _inGraphRetrieveOnce = async function(address,_revision,_wait) {
       return new Promise(async function(resolve, reject) {
+        let option = null;
+        if((typeof _wait !== 'undefined') && (_wait !== null)) {
+          option = { wait:_wait};
+        }
           if((typeof _revision == 'undefined') || (_revision == null)) {
             gun.get(address).once(function(_node) {
               resolve(_node);
-            });
+            },option);
           } else {
+            console.log("----------",_revision);
             gun.get(address).get(_revision).once(function(_node) {
                 resolve(_node);
-            });
+            },option);
+            gun.get(_revision).once(function(_node) {
+                resolve(_node);
+            },option);
           }
       });
     }
@@ -324,6 +333,39 @@ const TydidsP2P = {
       } else {
         return null;
       }
+    }
+
+    const retrieveRevisions = async function(address,_wait,_noresolve) {
+      if((typeof _wait == 'undefined')||(_wait == null)) _wait = _WAITACK;
+      let history = [];
+      let startTime = new Date().getTime();
+      let _revision = null;
+
+      const _innerRetrieve = async function(_rev) {
+        let latest = await _inGraphRetrieveOnce(address,_rev);
+        history.push(latest);
+        console.log("HUIBUH",_rev);
+        if(latest.ancestor !== address) {
+          console.log("************** Inner Itteration",latest.ancestor);
+          await _innerRetrieve(latest.ancestor);
+        } else {
+          console.log("HOIBOY",latest);
+        }
+        return;
+      }
+
+      await Promise.any([_innerRetrieve(),sleep(_wait)]);
+
+      for(let i=0;i<history.length;i++) {
+        if((typeof history[i] !== 'undefined')&&(typeof history[i].presentation !== 'undefined')) {
+          if((typeof _noresolve == 'undefined' )||(_noresolve == null)) {
+            history[i].did = await _resolveDid(history[i].presentation);
+          } else {
+            history[i].did = jsontokens.decodeToken(history[i].presentation);
+          }
+        }
+      }
+      return history;
     }
 
     const retrievePresentation = async function(address,_revision,nowait) {
@@ -423,6 +465,7 @@ const TydidsP2P = {
       stats:stats,
       updatePresentation:updatePresentation,
       retrievePresentation:retrievePresentation,
+      retrieveRevisions:retrieveRevisions,
       retrieveDID:retrieveDID,
       delegate:delegate,
       revoke:revoke,

@@ -257,7 +257,6 @@ const TydidsP2P = {
               resolve(_node);
             },option);
           } else {
-            console.log("----------",_revision);
             gun.get(address).get(_revision).once(function(_node) {
                 resolve(_node);
             },option);
@@ -344,12 +343,9 @@ const TydidsP2P = {
       const _innerRetrieve = async function(_rev) {
         let latest = await _inGraphRetrieveOnce(address,_rev);
         history.push(latest);
-        console.log("HUIBUH",_rev);
         if(latest.ancestor !== address) {
-          console.log("************** Inner Itteration",latest.ancestor);
           await _innerRetrieve(latest.ancestor);
-        } else {
-          console.log("HOIBOY",latest);
+        } else {          
         }
         return;
       }

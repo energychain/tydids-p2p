@@ -60,7 +60,7 @@ const TydidsP2P = {
         chainId: "6226",
         registry:"0xaC2DDf7488C1C2Dd1f8FFE36e207D8Fb96cF2fFB",
         abi:require("./EthereumDIDRegistry.abi.json"),
-        gunPeers:['https://relay.tydids.com/gun'],
+        gunPeers:['http://relay.tydids.com:8888/gun','http://relay2.tydids.com:8888/gun','http://relay3.tydids.com:8888/gun','http://relay4.tydids.com:8888/gun'],
         relays:[]
       }
     }
@@ -345,7 +345,7 @@ const TydidsP2P = {
         history.push(latest);
         if(latest.ancestor !== address) {
           await _innerRetrieve(latest.ancestor);
-        } else {          
+        } else {
         }
         return;
       }

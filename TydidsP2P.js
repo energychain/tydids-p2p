@@ -41,6 +41,7 @@ const TydidsP2P = {
     const VERSION = PACKAGE.version;
     const _subs = {};
     let lwait = 500;
+    const _RETRIEVEWAIT = 1000;
     const _WAITACK = 60000; // how long to wait for ACK message
     let _cbACK = null;
     let _cbRcvdACK = null;
@@ -232,8 +233,10 @@ const TydidsP2P = {
       gun.get(identity.address).put(node);
       gun.get(identity.address).get(node.revision).put(node);
       gun.get(node.revision).put(node);
-      await retrievePresentation(identity.address);
-      await retrievePresentation(identity.address,node.revision);
+      gun.get("relay").get(identity.address).put(node);
+      gun.get("relay").get(node.revision).put(node);
+      //await retrievePresentation(identity.address);
+      //await retrievePresentation(identity.address,node.revision);
       for(let i=0;i<config.relays.length;i++) {
         try {
           https.get(config.relays[i]+'/retrievePresentation?address='+identity.address+'&revision='+node.revision,function(res) {});
@@ -251,6 +254,8 @@ const TydidsP2P = {
         let option = null;
         if((typeof _wait !== 'undefined') && (_wait !== null)) {
           option = { wait:_wait};
+        } else {
+          option = { wait:_RETRIEVEWAIT};
         }
           if((typeof _revision == 'undefined') || (_revision == null)) {
             gun.get(address).once(function(_node) {
@@ -341,9 +346,10 @@ const TydidsP2P = {
       let _revision = null;
 
       const _innerRetrieve = async function(_rev) {
-        let latest = await _inGraphRetrieveOnce(address,_rev);
+        const latest = await _inGraphRetrieveOnce(address,_rev);
         history.push(latest);
         if(latest.ancestor !== address) {
+          //console.log(latest);
           await _innerRetrieve(latest.ancestor);
         } else {
         }
@@ -409,9 +415,14 @@ const TydidsP2P = {
         return _presentation.payload;
       } else {
         if((typeof nowait == 'undefined') || (nowait == null) || (nowait==false)) {
-          await sleep(lwait);
-          lwait += 500;
-          return await retrievePresentation(address,_revision);
+          if(lwait < 5000) {
+            await sleep(lwait);
+            lwait += 500;
+            return await retrievePresentation(address,_revision);
+          } else {
+            lwait = 10;
+            return null;
+          }
         } else {
           return null;
         }

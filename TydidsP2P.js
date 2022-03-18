@@ -138,13 +138,22 @@ const TydidsP2P = {
       }
     }
     if((typeof _listenServerPort !== 'undefined') && ( _listenServerPort !== null)) {
-      const server = require('http').createServer().listen(_listenServerPort);
+      const server = require('http').createServer(function(req,res) {
+        if(req.url.length == 43) {            
+            retrievePresentation(req.url.substr(1,42)).then(function(data) {
+              res.writeHead(200, {'Content-Type': 'text/json'});
+              res.write(JSON.stringify(data))
+              res.end();
+            });
+        }
+      }).listen(_listenServerPort);
       _gunOpts.web = server;
     }
-    _gunOpts.file ="radata_"+wallet.address+"_"+instanceID;
+    _gunOpts.file ="radata_"+wallet.address;
 
     if((typeof gun == 'undefined') || (gun == null)) {
       const Gun = require('gun');
+      require('gun/lib/load.js');
       gun = Gun(_gunOpts);
       if(typeof gun.user == 'undefined') {
         if(typeof SEA !== 'undefined') {
@@ -235,8 +244,6 @@ const TydidsP2P = {
       gun.get(node.revision).put(node);
       gun.get("relay").get(identity.address).put(node);
       gun.get("relay").get(node.revision).put(node);
-      //await retrievePresentation(identity.address);
-      //await retrievePresentation(identity.address,node.revision);
       for(let i=0;i<config.relays.length;i++) {
         try {
           https.get(config.relays[i]+'/retrievePresentation?address='+identity.address+'&revision='+node.revision,function(res) {});
@@ -269,6 +276,13 @@ const TydidsP2P = {
                 resolve(_node);
             },option);
           }
+      });
+    }
+    const _inGraphLoad = async function(address,_revision) {
+      return new Promise(async function(resolve, reject) {
+            gun.get(address).load(function(_node) {
+              resolve(_node);
+            });
       });
     }
 
@@ -345,18 +359,25 @@ const TydidsP2P = {
       let startTime = new Date().getTime();
       let _revision = null;
 
-      const _innerRetrieve = async function(_rev) {
-        const latest = await _inGraphRetrieveOnce(address,_rev);
-        history.push(latest);
-        if(latest.ancestor !== address) {
-          //console.log(latest);
-          await _innerRetrieve(latest.ancestor);
-        } else {
-        }
-        return;
+      const _innerRetrieve = async function(obj) {
+          if(typeof obj.presentation !== 'undefined') {
+            history.push(obj);
+          } else {
+            for (const [key, value] of Object.entries(obj)) {
+              if(key.length == 42) {
+                  await _innerRetrieve(value);
+              }
+            }
+          }
       }
 
-      await Promise.any([_innerRetrieve(),sleep(_wait)]);
+      const latest = await _inGraphLoad(address);
+      for (const [key, value] of Object.entries(latest)) {
+          if(key.length == 42) {
+              await _innerRetrieve(value);
+          }
+      }
+//      await Promise.any([_innerRetrieve(),sleep(_wait)]);
 
       for(let i=0;i<history.length;i++) {
         if((typeof history[i] !== 'undefined')&&(typeof history[i].presentation !== 'undefined')) {
@@ -376,31 +397,33 @@ const TydidsP2P = {
       let hash = address + '_' + _revision;
       if(typeof _subs[hash] == 'undefined') {
         const fireEvent = async function(_node) {
-          const _p = await _resolveDid(_node.presentation);
-          if(_p.payload.iat > _subs[hash]) {
-            _subs[hash] = _p.payload.iat;
-            _p.jwt = _node.presentation;
-            emitter.emit("payload:ethr:6226:"+address,_p.payload);
-            emitter.emit("payload:ethr:6226:"+_revision,_p.payload);
-            emitter.emit("did:ethr:6226:"+address,_node);
-            emitter.emit("did:ethr:6226:"+_revision,_node);
-            emitter.emit("presentation:ethr:6226:"+address,_p);
-            emitter.emit("presentation:ethr:6226:"+_revision,_p);
-            emitter.emit("jwt:ethr:6226:"+address,_node.presentation);
-            emitter.emit("jwt:ethr:6226:"+_revision,_node.presentation);
-            if(address !== identity.address) {
-              let _did = {iat:identity.address};
-              if(typeof _cbACK == 'function') {
-                _did = await _cbACK(_p);
-              }
-              if(typeof _did !== 'undefined') {
-                _did._reference = _p.payload._revision;
-                const ack = await _buildJWTDid(_did); // here we might add a Reply Callback!
-                gun.get(_p.payload._revision).get('ack').get(identity.address).put({did:ack});
+          if((typeof _node.revision !== 'undefined') && (typeof _subs[_node.revision] == 'undefined')) {
+            _subs[_node.revision] = new Date().getTime();
+            const _p = await _resolveDid(_node.presentation);
+            if(_p.payload.iat > _subs[hash]) {
+              _subs[hash] = _p.payload.iat;
+              _p.jwt = _node.presentation;
+              emitter.emit("payload:ethr:6226:"+address,_p.payload);
+              emitter.emit("payload:ethr:6226:"+_revision,_p.payload);
+              emitter.emit("did:ethr:6226:"+address,_node);
+              emitter.emit("did:ethr:6226:"+_revision,_node);
+              emitter.emit("presentation:ethr:6226:"+address,_p);
+              emitter.emit("presentation:ethr:6226:"+_revision,_p);
+              emitter.emit("jwt:ethr:6226:"+address,_node.presentation);
+              emitter.emit("jwt:ethr:6226:"+_revision,_node.presentation);
+              if(address !== identity.address) {
+                let _did = {iat:identity.address};
+                if(typeof _cbACK == 'function') {
+                  _did = await _cbACK(_p);
+                }
+                if(typeof _did !== 'undefined') {
+                  _did._reference = _p.payload._revision;
+                  const ack = await _buildJWTDid(_did); // here we might add a Reply Callback!
+                  gun.get(_p.payload._revision).get('ack').get(identity.address).put({did:ack});
+                }
               }
             }
           }
-
         }
         _subs[hash] = Math.round(new Date().getTime()/1000);
         gun.get(address).on(function(_node) {

@@ -77,6 +77,7 @@ const app = async function() {
     out('TyDIDs P2P version',ssi.version);
     ssi.onACK (function(_presentation) {
       out('ACK',_presentation.payload._revision);
+      //out(_presentation);
       return {pong:new Date().getTime()};
     });
     ssi.onReceivedACK(function(from,did) {

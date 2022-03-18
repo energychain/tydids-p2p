@@ -61,7 +61,7 @@ const TydidsP2P = {
         chainId: "6226",
         registry:"0xaC2DDf7488C1C2Dd1f8FFE36e207D8Fb96cF2fFB",
         abi:require("./EthereumDIDRegistry.abi.json"),
-        gunPeers:['http://relay.tydids.com:8888/gun','http://relay2.tydids.com:8888/gun','http://relay3.tydids.com:8888/gun','http://relay4.tydids.com:8888/gun'],
+        gunPeers:['http://relay.tydids.com:8888/','http://relay2.tydids.com:8888/','http://relay3.tydids.com:8888/','http://relay4.tydids.com:8888/'],
         relays:[]
       }
     }
@@ -131,7 +131,10 @@ const TydidsP2P = {
     const provider = new ethers.providers.JsonRpcProvider(config.rpcUrl);
     const wallet = new ethers.Wallet(privateKey,provider);
     const singingKey = new ethers.utils.SigningKey(privateKey);
-    let _gunOpts = {peers:config.gunPeers};
+    let _gunOpts = {peers:[]};
+    for(let i=0;i<config.gunPeers.length;i++) {
+      _gunOpts.peers.push(config.gunPeers[i]+'gun');
+    }
     if((typeof _peers !== 'undefined') && (_peers !== null)) {
       for(let i=0;i<_peers.length;i++) {
         config.gunPeers.push(_peers[i]);
@@ -139,7 +142,7 @@ const TydidsP2P = {
     }
     if((typeof _listenServerPort !== 'undefined') && ( _listenServerPort !== null)) {
       const server = require('http').createServer(function(req,res) {
-        if(req.url.length == 43) {            
+        if(req.url.length == 43) {
             retrievePresentation(req.url.substr(1,42)).then(function(data) {
               res.writeHead(200, {'Content-Type': 'text/json'});
               res.write(JSON.stringify(data))
@@ -244,16 +247,14 @@ const TydidsP2P = {
       gun.get(node.revision).put(node);
       gun.get("relay").get(identity.address).put(node);
       gun.get("relay").get(node.revision).put(node);
-      for(let i=0;i<config.relays.length;i++) {
+      await sleep(200);
+      for(let i=0;i<config.gunPeers.length;i++) {
         try {
-          https.get(config.relays[i]+'/retrievePresentation?address='+identity.address+'&revision='+node.revision,function(res) {});
+          https.get(config.gunPeers[i]+'json/'+identity.address,function(res) {});
           await sleep(100);
-          https.get(config.relays[i]+'/retrievePresentation?address='+identity.address,function(res) {});
         } catch(e) {
-
         }
       }
-
     }
 
     const _inGraphRetrieveOnce = async function(address,_revision,_wait) {

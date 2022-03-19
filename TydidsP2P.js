@@ -131,7 +131,7 @@ const TydidsP2P = {
     const provider = new ethers.providers.JsonRpcProvider(config.rpcUrl);
     const wallet = new ethers.Wallet(privateKey,provider);
     const singingKey = new ethers.utils.SigningKey(privateKey);
-    let _gunOpts = {peers:[]};
+    let _gunOpts = {peers:[],radisk:false};
     for(let i=0;i<config.gunPeers.length;i++) {
       _gunOpts.peers.push(config.gunPeers[i]+'gun');
     }
@@ -248,7 +248,7 @@ const TydidsP2P = {
       gun.get("relay").get(identity.address).put(node);
       gun.get("relay").get(node.revision).put(node);
       await sleep(200);
-      for(let i=0;i<config.gunPeers.length;i++) {
+      for(let i=0;((i<config.gunPeers.length)&&(i<5));i++) {
         try {
           https.get(config.gunPeers[i]+'json/'+identity.address,function(res) {});
           await sleep(100);
@@ -279,11 +279,20 @@ const TydidsP2P = {
           }
       });
     }
-    const _inGraphLoad = async function(address,_revision) {
+    const _inGraphLoad = async function(address,rn) {
       return new Promise(async function(resolve, reject) {
-            gun.get(address).load(function(_node) {
+            let resolved = false;
+            if((typeof rn == 'undefined') || (rn == null)) rn = gun.get(address);
+            rn.load(async function(_node) {
+              for (const [key, value] of Object.entries(_node)) {
+                _node[key] = await _inGraphLoad(address,rn.get(key));
+              }
+              resolved = true;
               resolve(_node);
             });
+            setTimeout(function() {
+              if(!resolved) resolve({});
+            },5000);
       });
     }
 
@@ -371,24 +380,28 @@ const TydidsP2P = {
             }
           }
       }
-
+      console.log("Go To Graph");
       const latest = await _inGraphLoad(address);
+      console.log("Finished Loading",latest);
       for (const [key, value] of Object.entries(latest)) {
           if(key.length == 42) {
               await _innerRetrieve(value);
           }
       }
 //      await Promise.any([_innerRetrieve(),sleep(_wait)]);
-
+      console.log("Finished Fetch",latest);
       for(let i=0;i<history.length;i++) {
         if((typeof history[i] !== 'undefined')&&(typeof history[i].presentation !== 'undefined')) {
           if((typeof _noresolve == 'undefined' )||(_noresolve == null)) {
+            console.log("Go");
             history[i].did = await _resolveDid(history[i].presentation);
+            console.log("/Go");
           } else {
             history[i].did = jsontokens.decodeToken(history[i].presentation);
           }
         }
       }
+      console.log("RETURN",history);
       return history;
     }
 

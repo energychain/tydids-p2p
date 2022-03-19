@@ -25,6 +25,7 @@ program
   .option('--peer <url>')
   .option('-w --writeTydidsJSON')
   .option('--createPrivateKey')
+  .option('--age')
 
 program.parse();
 
@@ -78,6 +79,13 @@ const app = async function() {
     ssi.onACK (function(_presentation) {
       out('ACK',_presentation.payload._revision);
       //out(_presentation);
+      if(options.age !== 'undefined') {
+        let age = Math.round((new Date().getTime() / 1000) - _presentation.payload.iat);
+        console.dir({
+          secondsAgo:age,
+          at:new Date(_presentation.payload.iat * 1000).toString()
+        });
+      }
       return {pong:new Date().getTime()};
     });
     ssi.onReceivedACK(function(from,did) {
@@ -86,7 +94,14 @@ const app = async function() {
   }
   if(typeof options.presentation == 'undefined') {
     ssi.emitter.on('payload:ethr:6226:'+ssi.identity.address,function(data) {
-      out(data);
+
+      if(options.age !== 'undefined') {
+        let age = Math.round((new Date().getTime() / 1000) - data.iat);
+        console.dir({
+          secondsAgo:age,
+          at:new Date(data.iat * 1000).toString()
+        });
+      }
     });
   }
 
@@ -131,12 +146,27 @@ const app = async function() {
       }
       ssi.emitter.on('payload:ethr:6226:'+options.presentation,function(data) {
         out(data);
+        if(options.age !== 'undefined') {
+          let age = Math.round((new Date().getTime() / 1000) - data.iat);
+          console.dir({
+            secondsAgo:age,
+            at:new Date(data.iat * 1000).toString()
+          });
+        }
         if(typeof options.output !== 'undefined') {
           const fs = require("fs");
           fs.writeFileSync(options.output, JSON.stringify(data));
         }
       });
       out(presentation);
+
+      if(options.age !== 'undefined') {
+        let age = Math.round((new Date().getTime() / 1000) - presentation.iat);
+        console.dir({
+          secondsAgo:age,
+          at:new Date(presentation.iat * 1000).toString()
+        });
+      }
     }
   }
   if(typeof options.delegate !== 'undefined') {

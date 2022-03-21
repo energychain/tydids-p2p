@@ -342,7 +342,9 @@ const TydidsP2P = {
                   if(typeof _subs[_node.revision+':'+from] == 'undefined') {
                     _subs[_node.revision+':'+from] = new Date().getTime();
                     let did = await _resolveDid(_node.did);
-                    _subs[_node.revision+':'+from] = await _cbRcvdACK(from,did,did.payload._reference);
+                    if(did.issuer == 'did:ethr:6226:'+from) {
+                      _subs[_node.revision+':'+from] = await _cbRcvdACK(from,did,did.payload._reference);
+                    }
                   }
                 });
             });
@@ -357,7 +359,11 @@ const TydidsP2P = {
       const _node = await _retrievePresentationJWT(address,_revision);
       if((typeof _node !== 'undefined') &&(typeof _node.presentation !== 'undefined')) {
         const _presentation = await _resolveDid(_node.presentation);
-        return _presentation;
+        if(_presentation.issuer == 'did:ethr:6226:'+address) {
+          return _presentation;
+        } else {
+          return null;
+        }
       } else {
         return null;
       }
@@ -380,28 +386,21 @@ const TydidsP2P = {
             }
           }
       }
-      console.log("Go To Graph");
       const latest = await _inGraphLoad(address);
-      console.log("Finished Loading",latest);
       for (const [key, value] of Object.entries(latest)) {
           if(key.length == 42) {
               await _innerRetrieve(value);
           }
       }
-//      await Promise.any([_innerRetrieve(),sleep(_wait)]);
-      console.log("Finished Fetch",latest);
       for(let i=0;i<history.length;i++) {
         if((typeof history[i] !== 'undefined')&&(typeof history[i].presentation !== 'undefined')) {
           if((typeof _noresolve == 'undefined' )||(_noresolve == null)) {
-            console.log("Go");
             history[i].did = await _resolveDid(history[i].presentation);
-            console.log("/Go");
           } else {
             history[i].did = jsontokens.decodeToken(history[i].presentation);
           }
         }
       }
-      console.log("RETURN",history);
       return history;
     }
 
@@ -414,7 +413,7 @@ const TydidsP2P = {
           if((typeof _node.revision !== 'undefined') && (typeof _subs[_node.revision] == 'undefined')) {
             _subs[_node.revision] = new Date().getTime();
             const _p = await _resolveDid(_node.presentation);
-            if(_p.payload.iat > _subs[hash]) {
+            if((_p.payload.iat > _subs[hash]) && (_p.issuer == 'did:ethr:6226:'+address)) {
               _subs[hash] = _p.payload.iat;
               _p.jwt = _node.presentation;
               emitter.emit("payload:ethr:6226:"+address,_p.payload);

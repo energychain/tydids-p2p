@@ -17,7 +17,10 @@ const _decryptWithPrivateKey = async function(privateKey,data) {
   data = EthCrypto.cipher.parse(data);
   return await EthCrypto.decryptWithPrivateKey(privateKey,data);
 }
-
+/**
+  * TyDIDs-P2P
+  * Data Identity Framework
+**/
 const TydidsP2P = {
   jsontokens:jsontokens,
   ethers:ethers,
@@ -61,6 +64,8 @@ const TydidsP2P = {
         chainId: "6226",
         registry:"0xaC2DDf7488C1C2Dd1f8FFE36e207D8Fb96cF2fFB",
         abi:require("./EthereumDIDRegistry.abi.json"),
+        idabi:require("./EthereumIDRoleRegistry.abi.json"),
+        idregistry:"0x380753155B8ad0b903D85E9F08233a0359369568",
         gunPeers:['http://relay.tydids.com:8888/','http://relay2.tydids.com:8888/','http://relay3.tydids.com:8888/','http://relay4.tydids.com:8888/'],
         relays:[]
       }
@@ -309,6 +314,12 @@ const TydidsP2P = {
     }
 
     // Public functions
+
+    /**
+     * Updates Presentation controlled by this SSI
+     * @function async updatePresentation
+     * @params {Object} fields/data to set
+    */
     const updatePresentation = async function(payload) {
         const _presentation = await _resolveDid(node.presentation);
         // merge
@@ -404,6 +415,11 @@ const TydidsP2P = {
       return history;
     }
 
+    /**
+     * Retrieve a presentation via P2P communitcation by given address and subscribes to changes.
+     * @function async retrievePresentation
+     * @params {address} Address of presentation to retrieve
+    */
     const retrievePresentation = async function(address,_revision,nowait) {
       if((typeof address == 'undefined') || (address == null)) address = identity.address;
       // Do subscribtions - might trigger several times in case of fire? - so we store
@@ -482,6 +498,20 @@ const TydidsP2P = {
       return await registry.revokeDelegate(identity.address,"0x766572694b657900000000000000000000000000000000000000000000000000",to);
     }
 
+    const setIDRole = async function(to,role) {
+      const provider = new ethers.providers.JsonRpcProvider(config.rpcUrl);
+      const wallet = new ethers.Wallet(privateKey,provider);
+      const registry = new ethers.Contract( config.idregistry , config.idabi , wallet );
+      return await registry.assign(to,role);
+    }
+
+    const getIDRole = async function(from,to,role) {
+      const provider = new ethers.providers.JsonRpcProvider(config.rpcUrl);
+      const wallet = new ethers.Wallet(privateKey,provider);
+      const registry = new ethers.Contract( config.idregistry , config.idabi , wallet );
+      return await registry.getRole(from,to);
+    }
+
     const onReceivedACK = function(fct) {
       _cbRcvdACK = fct;
     }
@@ -518,7 +548,9 @@ const TydidsP2P = {
       onReceivedACK:onReceivedACK,
       onACK:onACK,
       setIdentifier:setIdentifier,
-      node:node
+      node:node,
+      setIDRole:setIDRole,
+      getIDRole:getIDRole
     }
   }
 }

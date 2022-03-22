@@ -1,0 +1,70 @@
+[
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "target",
+				"type": "address"
+			},
+			{
+				"name": "role",
+				"type": "address"
+			}
+		],
+		"name": "assign",
+		"outputs": [
+			{
+				"name": "success",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"name": "target",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"name": "role",
+				"type": "address"
+			}
+		],
+		"name": "Assignment",
+		"type": "event"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"name": "registrant",
+				"type": "address"
+			},
+			{
+				"name": "target",
+				"type": "address"
+			}
+		],
+		"name": "getRole",
+		"outputs": [
+			{
+				"name": "",
+				"type": "address"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	}
+]

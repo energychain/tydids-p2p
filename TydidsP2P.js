@@ -253,7 +253,15 @@ const TydidsP2P = {
       gun.get("relay").get(identity.address).put(node);
       gun.get("relay").get(node.revision).put(node);
       await sleep(200);
-      for(let i=0;((i<config.gunPeers.length)&&(i<5));i++) {
+      function shuffle(a) {
+          for (let i = a.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [a[i], a[j]] = [a[j], a[i]];
+          }
+          return a;
+      }
+      config.gunPeers = shuffle(config.gunPeers)
+      for(let i=0;((i<config.gunPeers.length)&&(i<3));i++) {
         try {
           https.get(config.gunPeers[i]+'json/'+identity.address,function(res) {});
           await sleep(100);
@@ -334,8 +342,9 @@ const TydidsP2P = {
         node.revision = node.successor;
         node.successor = _getRandomAddress();
 
-        await _updateGraph();
+         _updateGraph();
 
+        await sleep(200);
         // send event
         _presentation.jwt = node.presentation;
         emitter.emit("payload:ethr:6226:"+identity.address,_presentation.payload);
@@ -358,6 +367,7 @@ const TydidsP2P = {
                     }
                   }
                 });
+                gun.get(_revision).get('ack').off();
             });
             setTimeout(function() {
               gun.get(_revision).get('ack').off();

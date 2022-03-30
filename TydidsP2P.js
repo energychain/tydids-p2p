@@ -102,7 +102,7 @@ const TydidsP2P = {
     }
 
     let hub = signalhub(wallet.address, ['http://relay2.tydids.com:6226/']);
-    
+
     if((typeof swarm == 'undefined') || (swarm == null)) {
         const webrtcswarm = require('webrtc-swarm');
         swarm = webrtcswarm(hub, {
@@ -258,10 +258,12 @@ const TydidsP2P = {
                 }
               }
             })
+            /* CAUTION! Timeout not implemented!
             setTimeout(function() {
               hub.close();
               hub = signalhub(identity.address, ['http://relay2.tydids.com:6226/']);
             },_WAITACK);
+            */
         }
         return node;
     }
@@ -396,7 +398,6 @@ const TydidsP2P = {
     if(doReset) {
       await updatePresentation({});
     }
-    console.log("Here!");
 
     return {
       wallet: wallet,

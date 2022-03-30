@@ -66,7 +66,8 @@ const TydidsP2P = {
         abi:require("./EthereumDIDRegistry.abi.json"),
         idabi:require("./EthereumIDRoleRegistry.abi.json"),
         idregistry:"0x380753155B8ad0b903D85E9F08233a0359369568",
-        gunPeers:['http://relay.tydids.com:8888/','http://relay2.tydids.com:8888/','http://relay3.tydids.com:8888/','http://relay4.tydids.com:8888/'],
+//        gunPeers:['http://relay.tydids.com:8888/','http://relay2.tydids.com:8888/','http://relay3.tydids.com:8888/','http://relay4.tydids.com:8888/'],
+        gunPeers:['http://relay2.tydids.com:8888/'],
         relays:[]
       }
     }

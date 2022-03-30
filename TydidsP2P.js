@@ -200,7 +200,6 @@ const TydidsP2P = {
     }
 
     const _updateGraph = async function() {
-      console.log("_updateGraph",identity.address);
       hub.broadcast(identity.address,node);
     }
 
@@ -208,7 +207,7 @@ const TydidsP2P = {
       return new Promise(async function(resolve, reject) {
         hub.subscribe(address)
           .on('data', function (message) {
-            console.log("data",address,message);
+            //console.log("data",address,message);
             resolve(message);
           })
       });
@@ -225,8 +224,7 @@ const TydidsP2P = {
               if(address == node.identity.address) {
                 _revision = node.revision;
               }
-            }
-            console.log("_retrievePresentationJWT",address);
+            }            
             let inGraph = await _inGraphRetrieveOnce(address,_revision);
             resolve(inGraph)
       });

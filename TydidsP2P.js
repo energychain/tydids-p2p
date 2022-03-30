@@ -137,14 +137,14 @@ const TydidsP2P = {
     const wallet = new ethers.Wallet(privateKey,provider);
     const singingKey = new ethers.utils.SigningKey(privateKey);
     let _gunOpts = {peers:[],radisk:false};
-    for(let i=0;i<config.gunPeers.length;i++) {
-      _gunOpts.peers.push(config.gunPeers[i]+'gun');
-    }
+
     if((typeof _peers !== 'undefined') && (_peers !== null)) {
       for(let i=0;i<_peers.length;i++) {
         config.gunPeers.push(_peers[i]);
       }
     }
+    _gunOpts = {};
+
     if((typeof _listenServerPort !== 'undefined') && ( _listenServerPort !== null)) {
       const server = require('http').createServer(function(req,res) {
         if(req.url.length == 43) {
@@ -157,7 +157,7 @@ const TydidsP2P = {
       }).listen(_listenServerPort);
       _gunOpts.web = server;
     }
-    _gunOpts.file ="radata_"+wallet.address;
+    _gunOpts.file ="radata_"+wallet.address+"_"+new Date().getTime();
 
     if((typeof gun == 'undefined') || (gun == null)) {
       const Gun = require('gun');
@@ -188,6 +188,19 @@ const TydidsP2P = {
 
     // Dummy Login
     await loginUserGun(wallet.address,privateKey);
+    let peers = [];
+    function shuffle(a) {
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+    config.gunPeers = shuffle(config.gunPeers);
+    for(let i=0;(i<config.gunPeers.length)&&(i<2);i++) {
+      peers.push(config.gunPeers[i]+'gun');
+    }
+    gun.opt({peers:peers});
     keys.gun = gun.user().is;
     identity.gunPublicKey = keys.gun.pub;
     identity.gunEPublicKey = keys.gun.epub;

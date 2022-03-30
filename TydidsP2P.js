@@ -101,14 +101,15 @@ const TydidsP2P = {
       }).listen(_listenServerPort);
     }
 
-    let hub = signalhub(wallet.address, ['http://relay2.tydids.com:6226/']);
+    let hub = signalhub("tydids-p2p", ['http://relay2.tydids.com:6226/']);
+
 
     if((typeof swarm == 'undefined') || (swarm == null)) {
         const webrtcswarm = require('webrtc-swarm');
         swarm = webrtcswarm(hub, {
-          wrtc: require('wrtc'),
-          uuid:wallet.address
+          wrtc: require('wrtc')
         })
+        // removed  uuid:wallet.address
     }
     const emitter = new Events();
     const parent = this;
@@ -128,7 +129,24 @@ const TydidsP2P = {
 
     node.identity = identity;
 
+    swarm.on('peer', function (peer, id) {
+        peer.send(JSON.stringify(identity));
+        emitter.emit("mesh",swarm.peers.length);
+        emitter.emit("p2p-connect",id);
+        peer.on('data', data => {
+            data = data.toString();
+            // If requested handle
+            if(data == 'present') {
+             _updateGraph();
+            }
+            //console.log("Handle Control Message",id,data);
+        });
+    })
 
+    swarm.on('disconnect', function (peer, id) {
+        emitter.emit("mesh",swarm.peers.length);
+        emitter.emit("p2p-disconnect",id);
+    })
     // Internal Management
 
     let stats = {
@@ -182,6 +200,7 @@ const TydidsP2P = {
     }
 
     const _updateGraph = async function() {
+      console.log("_updateGraph",identity.address);
       hub.broadcast(identity.address,node);
     }
 
@@ -189,6 +208,7 @@ const TydidsP2P = {
       return new Promise(async function(resolve, reject) {
         hub.subscribe(address)
           .on('data', function (message) {
+            console.log("data",address,message);
             resolve(message);
           })
       });
@@ -206,6 +226,7 @@ const TydidsP2P = {
                 _revision = node.revision;
               }
             }
+            console.log("_retrievePresentationJWT",address);
             let inGraph = await _inGraphRetrieveOnce(address,_revision);
             resolve(inGraph)
       });

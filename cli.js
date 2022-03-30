@@ -114,6 +114,10 @@ const app = async function() {
     addload[args[0]] = args[1];
     let imutable = await ssi.updatePresentation(addload);
     out("Revision",imutable.revision);
+    setInterval(function() {
+      ssi.updatePresentation(addload);
+      console.log("resend");
+    },1000);
   }
   if(typeof options.input !== 'undefined') {
     const storeFile = async function() {

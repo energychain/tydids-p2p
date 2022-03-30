@@ -1,6 +1,6 @@
 {
   "name": "tydids-p2p",
-  "version": "1.2.99build5",
+  "version": "1.2.99build6",
   "description": "A consensus driven decentralized data governance framework.",
   "main": "./TydidsP2P.js",
   "bin": {
@@ -11,7 +11,12 @@
     "test": "mocha",
     "build": "webpack -c ./webpack.config.js",
     "install": "node-pre-gyp install --fallback-to-build"
-  },  
+  },
+  "binary": {
+        "module_name": "tydids-p2p",
+        "module_path": "./lib/binding/",
+        "host": "https://tydids-p2p.s3-us-west-1.amazonaws.com"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/energychain/tydids-p2p.git"

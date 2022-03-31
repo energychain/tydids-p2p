@@ -1,0 +1,9 @@
+{
+  "rpcUrl": "https://rpc2.tydids.com/",
+  "chainName": "mainnet",
+  "chainId": "6226",
+  "registry":"0xaC2DDf7488C1C2Dd1f8FFE36e207D8Fb96cF2fFB",
+  "idregistry":"0x380753155B8ad0b903D85E9F08233a0359369568",
+  "signalDispatcher":["http://relay2.tydids.com:6226/"],
+  "signalKingdom":"tydids-p2p"
+}

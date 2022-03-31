@@ -1,4 +1,4 @@
 cmd: npm start
 targets:
   build-dist:
-    cmd: "npm run build;uglifyjs -c -m -- dist/TydidsP2P.js > ./TydidsP2P.min.js"
+    cmd: "npm run build"

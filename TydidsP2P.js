@@ -30,11 +30,10 @@ const TydidsP2P = {
       const wallet = ethers.Wallet.createRandom();
       return wallet.privateKey;
   },
-  ssi:async function(privateKey,doReset,swarm,_listenServerPort,_peers,config) {
-    if((typeof doReset == 'undefined') || (doReset == null)) { doReset = true; }
-
+  ssi:async function(privateKey,config,swarm) {
     if((typeof privateKey == 'undefined') || (privateKey == null)) {
-      privateKey = '0x52a3442496ba4cd6444ddd147855725741bc385e93d08d66c62d01a7347531b7'; // view Only Key! Do not Delegate to 0x6f7197B17384Ac194eE0DfaC444D018F174C4553
+      const wallet = new ethers.Wallet.createRandom();
+      privateKey = wallet.privateKey;
     }
     const EthrDID = require("ethr-did").EthrDID;
     const getResolver = require('ethr-did-resolver').getResolver;
@@ -60,19 +59,19 @@ const TydidsP2P = {
       ancestor:null,
       identity:null
     }
-    if((typeof config == 'undefined') || (config == null)) {
-      config = {
-        rpcUrl: "https://rpc2.tydids.com/",
-        name: "mainnet",
-        chainId: "6226",
-        registry:"0xaC2DDf7488C1C2Dd1f8FFE36e207D8Fb96cF2fFB",
-        abi:require("./EthereumDIDRegistry.abi.json"),
-        idabi:require("./EthereumIDRoleRegistry.abi.json"),
-        idregistry:"0x380753155B8ad0b903D85E9F08233a0359369568",
-        ptpPeers:['http://relay2.tydids.com:6226/'],
-        relays:[]
-      }
+    const default_config = require("./tydids.config.json");
+    if(typeof config !== 'object') {
+      config = {};
     }
+    if(typeof config.rpcUrl == 'undefined') config.rpcUrl = default_config.rpcUrl;
+    if(typeof config.chainName == 'undefined') config.chainName = default_config.chainName;
+    if(typeof config.chainId == 'undefined') config.chainId = default_config.chainId;
+    if(typeof config.registry == 'undefined') config.registry = default_config.registry;
+    if(typeof config.idregistry == 'undefined') config.idregistry = default_config.idregistry;
+    if(typeof config.signalDispatcher == 'undefined') config.signalDispatcher = default_config.signalDispatcher;
+    if(typeof config.signalKingdom == 'undefined') config.signalKingdom = default_config.signalKingdom;
+    if(typeof config.abi == 'undefined') config.abi = require("./EthereumDIDRegistry.abi.json");
+    if(typeof config.idabi == 'undefined') config.idabi = require("./EthereumIDRoleRegistry.abi.json");
 
     class Events extends EventEmitter {
       constructor(config) {
@@ -89,20 +88,42 @@ const TydidsP2P = {
     const wallet = new ethers.Wallet(privateKey,provider);
     const singingKey = new ethers.utils.SigningKey(privateKey);
 
-    if((typeof _listenServerPort !== 'undefined') && ( _listenServerPort !== null)) {
+    if((typeof config.httpport !== 'undefined') && ( config.httpport !== null)) {
+      const path = require('path');
       const server = require('http').createServer(function(req,res) {
-        if(req.url.length == 43) {
-            retrievePresentation(req.url.substr(1,42)).then(function(data) {
-              res.writeHead(200, {'Content-Type': 'text/json'});
-              res.write(JSON.stringify(data))
-              res.end();
-            });
+        res.writeHead(200, {'Content-Type': 'text/json'});
+        const address = path.basename(req.url);
+        const dirname = path.dirname(req.url);
+        if(dirname == '/did') {
+          retrieveDID(address).then(function(data) {
+            res.writeHead(200, {'Content-Type': 'text/json'});
+            res.write(JSON.stringify(data))
+            res.end();
+          });
+        } else
+        if((dirname == '/presentation')||(dirname == '/payload')) {
+          retrievePresentation(address).then(function(data) {
+            res.writeHead(200, {'Content-Type': 'text/json'});
+            res.write(JSON.stringify(data))
+            res.end();
+          });
+        } else
+        if(dirname == '/jwt') {
+          retrieveDID(address).then(function(data) {
+            res.writeHead(200, {'Content-Type': 'text/plain'});
+            if(data !== null) {
+              res.write(JSON.stringify(data.jwt))
+            }
+            res.end();
+          });
+        } else {
+          res.writeHead(404, {'Content-Type': 'text/plain'});
+          res.end();
         }
-      }).listen(_listenServerPort);
+      }).listen(config.httpport);
     }
 
-    let hub = signalhub("tydids-p2p", ['http://relay2.tydids.com:6226/']);
-
+    let hub = signalhub(config.signalKingdom, config.signalDispatcher);
 
     if((typeof swarm == 'undefined') || (swarm == null)) {
         const webrtcswarm = require('webrtc-swarm');
@@ -110,8 +131,8 @@ const TydidsP2P = {
           wrtc: require('wrtc'),
           uuid:wallet.address
         })
-        // removed
     }
+
     const emitter = new Events();
     const parent = this;
 
@@ -131,6 +152,7 @@ const TydidsP2P = {
     node.identity = identity;
 
     swarm.on('peer', function (peer, id) {
+      try {
         peer.send(JSON.stringify(identity));
         emitter.emit("mesh",swarm.peers.length);
         emitter.emit("p2p-connect",id);
@@ -142,6 +164,7 @@ const TydidsP2P = {
             }
             //console.log("Handle Control Message",id,data);
         });
+      } catch(e) {}
     })
 
     swarm.on('disconnect', function (peer, id) {
@@ -199,7 +222,7 @@ const TydidsP2P = {
         }
 
     }
-    let lastGraphUpdate = new Date().getTime();
+    let lastGraphUpdate = 0;
 
     const _updateGraph = async function() {
       if(lastGraphUpdate<new Date().getTime()-5000) {
@@ -210,9 +233,9 @@ const TydidsP2P = {
 
     const _inGraphRetrieveOnce = async function(address,_revision,_wait) {
       return new Promise(async function(resolve, reject) {
+        hub.broadcast(address,{present:identity.address});
         hub.subscribe(address)
           .on('data', function (message) {
-            //console.log("data",address,message);
             resolve(message);
           })
       });
@@ -282,12 +305,6 @@ const TydidsP2P = {
                 }
               }
             })
-            /* CAUTION! Timeout not implemented!
-            setTimeout(function() {
-              hub.close();
-              hub = signalhub(identity.address, ['http://relay2.tydids.com:6226/']);
-            },_WAITACK);
-            */
         }
         return node;
     }
@@ -299,10 +316,11 @@ const TydidsP2P = {
         if(_presentation.issuer == 'did:ethr:6226:'+address) {
           return _presentation;
         } else {
-          return null;
+          return {err:'Different Issuer'};
         }
       } else {
-        return null;
+        await sleep(100);
+        return await retrieveDID(address,_revision);
       }
     }
 
@@ -419,9 +437,14 @@ const TydidsP2P = {
 
     //retrievePresentation();
 
-    if(doReset) {
-      await updatePresentation({});
-    }
+    await updatePresentation({});
+
+    hub.subscribe(identity.address)
+      .on('data', function (_req) {
+        if(typeof _req.present !== 'undefined') {
+            _updateGraph();
+        }
+    });
 
     return {
       wallet: wallet,

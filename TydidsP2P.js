@@ -107,9 +107,10 @@ const TydidsP2P = {
     if((typeof swarm == 'undefined') || (swarm == null)) {
         const webrtcswarm = require('webrtc-swarm');
         swarm = webrtcswarm(hub, {
-          wrtc: require('wrtc')
+          wrtc: require('wrtc'),
+          uuid:wallet.address
         })
-        // removed  uuid:wallet.address
+        // removed
     }
     const emitter = new Events();
     const parent = this;
@@ -224,7 +225,7 @@ const TydidsP2P = {
               if(address == node.identity.address) {
                 _revision = node.revision;
               }
-            }            
+            }
             let inGraph = await _inGraphRetrieveOnce(address,_revision);
             resolve(inGraph)
       });

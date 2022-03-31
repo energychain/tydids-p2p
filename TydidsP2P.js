@@ -439,6 +439,8 @@ const TydidsP2P = {
 
     await updatePresentation({});
 
+    let subscribers =0;
+
     hub.subscribe(identity.address)
       .on('data', function (_req) {
         if(typeof _req.present !== 'undefined') {
@@ -465,7 +467,9 @@ const TydidsP2P = {
       setIdentifier:setIdentifier,
       node:node,
       setIDRole:setIDRole,
-      getIDRole:getIDRole
+      getIDRole:getIDRole,
+      subscribers:hub.subscribers.length,
+      swarm:swarm.peers.length
     }
   }
 }

@@ -199,9 +199,13 @@ const TydidsP2P = {
         }
 
     }
+    let lastGraphUpdate = new Date().getTime();
 
     const _updateGraph = async function() {
-      hub.broadcast(identity.address,node);
+      if(lastGraphUpdate<new Date().getTime()-5000) {
+        lastGraphUpdate = new Date().getTime()
+        hub.broadcast(identity.address,node);
+      }
     }
 
     const _inGraphRetrieveOnce = async function(address,_revision,_wait) {

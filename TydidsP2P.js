@@ -343,7 +343,7 @@ const TydidsP2P = {
                 }
                 if(typeof _did !== 'undefined') {
                   const ack = await _buildJWTDid(_did); // here we might add a Reply Callback!
-                  hub.broadcast(_revision,ack);
+                  // hub.broadcast(_revision,ack);
                 }
               }
             }

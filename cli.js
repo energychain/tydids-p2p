@@ -14,18 +14,11 @@ program
   .option('-x --exit')
   .option('-p --presentation [address]')
   .option('-d --delegate <address>')
-  .option('-r --reset')
   .option('-v --verbose')
-  .option('-s --set')
-  .option('-T --timeout <milliseconds>')
-  .option('-H --history <address>')
   .option('-o --output <file>')
   .option('-f --input <file>')
-  .option('--relay <port>')
-  .option('--peer <url>')
-  .option('-w --writeTydidsJSON')
+  .option('--http <port>')
   .option('--createPrivateKey')
-  .option('--age')
 
 program.parse();
 
@@ -62,36 +55,34 @@ if(typeof options.createPrivateKey !== 'undefined') {
 if(typeof options.verbose !== 'undefined') {
   console.log = out;
 }
+
+let tydidsconfig = {};
+if(typeof options.http !== 'undefined') {
+  tydidsconfig.httpport = options.http;
+}
+
 let reset = false;
 if(typeof options.reset !== 'undefined') reset = true;
 if(typeof options.presentation !== 'undefined') reset = true;
 
 const app = async function() {
-  let port = options.relay;
+
   let peers = null;
   if(typeof options.peer !== 'undefined') {
     peers = [options.peer];
   }
 
-  const ssi = await tydids.ssi(privateKey,reset,null,port,peers);
+  const ssi = await tydids.ssi(privateKey,tydidsconfig);
   if(typeof options.verbose !== 'undefined') {
     out('TyDIDs P2P version',ssi.version);
     ssi.onACK (function(_presentation) {
-      out('ACK',_presentation.payload._revision);
-      //out(_presentation);
-      if(options.age !== 'undefined') {
-        let age = Math.round((new Date().getTime() / 1000) - _presentation.payload.iat);
-        console.dir({
-          secondsAgo:age,
-          at:new Date(_presentation.payload.iat * 1000).toString()
-        });
-      }
       return {pong:new Date().getTime()};
     });
     ssi.onReceivedACK(function(from,did) {
       out('ACKRcpt',from);
     });
   }
+  
   if(typeof options.presentation == 'undefined') {
     ssi.emitter.on('payload:ethr:6226:'+ssi.identity.address,function(data) {
 
@@ -109,17 +100,23 @@ const app = async function() {
   if(typeof options.identity !== 'undefined') {
     out(ssi.identity);
   }
+
   if((typeof options.set !== 'undefined') && (args.length == 2)) {
     let addload = {}
     addload[args[0]] = args[1];
     let imutable = await ssi.updatePresentation(addload);
     out("Revision",imutable.revision);
+    setInterval(function() {
+      ssi.updatePresentation(addload);
+      console.log("resend");
+    },1000);
   }
+
   if(typeof options.input !== 'undefined') {
     const storeFile = async function() {
       let data = JSON.parse(fs.readFileSync(options.input));
       let imutable = await ssi.updatePresentation(data);
-      out("Revision",imutable.revision);
+      out("Presentation",imutable.identity.address);
     }
     const fs = require("fs");
     fs.watchFile(options.input,(curr, prev) => {
@@ -127,6 +124,7 @@ const app = async function() {
     });
     storeFile();
   }
+
   if(typeof options.history !== 'undefined') {
       let history = await ssi.retrieveRevisions(options.history,options.timeout,true);
       for(let i=0;i<history.length;i++) {
@@ -135,6 +133,7 @@ const app = async function() {
         }
       }
   }
+
   if(typeof options.presentation !== 'undefined') {
     let outputPresentation = true;
     let presentation = await ssi.retrievePresentation(options.presentation);

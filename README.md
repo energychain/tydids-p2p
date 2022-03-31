@@ -54,6 +54,26 @@ app();
 
 ```
 
+
+## Cookbook Receipts
+
+### Retrieve DID/Presentation via http
+TyDIDs has a built in mini http-server providing you access to dids,jwts,presentations
+
+```shell
+tydids --http 8989
+```
+
+URL Schema:
+http://localhost:8989/payload/[address] - Presentation payload (JSON)
+
+http://localhost:8989/did/[address] - Full DID (JSON)
+
+http://localhost:8989/jwt/[address] - JSON-WebToken presentation (full DID)
+
+
+
+
 ## [CONTRIBUTING](https://github.com/energychain/tydids-p2p/blob/main/CONTRIBUTING.md)
 
 ## [CODE OF CONDUCT](https://github.com/energychain/tydids-p2p/blob/main/CODE_OF_CONDUCT.md)

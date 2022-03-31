@@ -30,16 +30,17 @@ const TydidsP2P = {
       const wallet = ethers.Wallet.createRandom();
       return wallet.privateKey;
   },
-  ssi:async function(privateKey,doReset,gun,_listenServerPort,_peers,config) {
-    if((typeof doReset == 'undefined') || (doReset == null)) { doReset = true; }
-
+  ssi:async function(privateKey,config,swarm) {
     if((typeof privateKey == 'undefined') || (privateKey == null)) {
-      privateKey = '0x52a3442496ba4cd6444ddd147855725741bc385e93d08d66c62d01a7347531b7'; // view Only Key! Do not Delegate to 0x6f7197B17384Ac194eE0DfaC444D018F174C4553
+      const wallet = new ethers.Wallet.createRandom();
+      privateKey = wallet.privateKey;
     }
-
     const EthrDID = require("ethr-did").EthrDID;
     const getResolver = require('ethr-did-resolver').getResolver;
     const Resolver = require('did-resolver').Resolver;
+
+    const signalhub = require('signalhub');
+
     const PACKAGE = require("./package.json");
     const VERSION = PACKAGE.version;
     const _subs = {};
@@ -50,6 +51,7 @@ const TydidsP2P = {
     let _cbRcvdACK = null;
     const instanceID = Math.random();
 
+
     const node = {
       presentation:null,
       revision:null,
@@ -57,20 +59,19 @@ const TydidsP2P = {
       ancestor:null,
       identity:null
     }
-    if((typeof config == 'undefined') || (config == null)) {
-      config = {
-        rpcUrl: "https://rpc2.tydids.com/",
-        name: "mainnet",
-        chainId: "6226",
-        registry:"0xaC2DDf7488C1C2Dd1f8FFE36e207D8Fb96cF2fFB",
-        abi:require("./EthereumDIDRegistry.abi.json"),
-        idabi:require("./EthereumIDRoleRegistry.abi.json"),
-        idregistry:"0x380753155B8ad0b903D85E9F08233a0359369568",
-//        gunPeers:['http://relay.tydids.com:8888/','http://relay2.tydids.com:8888/','http://relay3.tydids.com:8888/','http://relay4.tydids.com:8888/'],
-        gunPeers:['http://relay2.tydids.com:8888/'],
-        relays:[]
-      }
+    const default_config = require("./tydids.config.json");
+    if(typeof config !== 'object') {
+      config = {};
     }
+    if(typeof config.rpcUrl == 'undefined') config.rpcUrl = default_config.rpcUrl;
+    if(typeof config.chainName == 'undefined') config.chainName = default_config.chainName;
+    if(typeof config.chainId == 'undefined') config.chainId = default_config.chainId;
+    if(typeof config.registry == 'undefined') config.registry = default_config.registry;
+    if(typeof config.idregistry == 'undefined') config.idregistry = default_config.idregistry;
+    if(typeof config.signalDispatcher == 'undefined') config.signalDispatcher = default_config.signalDispatcher;
+    if(typeof config.signalKingdom == 'undefined') config.signalKingdom = default_config.signalKingdom;
+    if(typeof config.abi == 'undefined') config.abi = require("./EthereumDIDRegistry.abi.json");
+    if(typeof config.idabi == 'undefined') config.idabi = require("./EthereumIDRoleRegistry.abi.json");
 
     class Events extends EventEmitter {
       constructor(config) {
@@ -83,94 +84,55 @@ const TydidsP2P = {
       return wallet.address;
     }
 
-    const loginUserGun = function(username,password) {
-    return new Promise(async function(resolve, reject) {
-      user.auth(username, password, async function(ack){
-        if(typeof ack.err !== 'undefined') {
-          try {
-      if(ack.err == 'Wrong user or password.') {
-        username += '_'+instanceID;
-      }
-            user.create(username,password,async function(ack2) {
-      await sleep(200);
-              if(typeof ack2.err !== 'undefined') {
-                reject(ack2.err);
-              } else {
-                resolve(await loginUserGun(username,password));
-              }
-            });
-          } catch(e) {
-              await sleep(500);
-              resolve(await loginUserGun(username,password));
-          }
-        } else {
-          user.recall();
-          if(doReset) {
-            node.presentation = "";
-            node.revision = identity.address;
-            node.successor = _getRandomAddress();
-            node.ancestor = null;
-            resolve(node);
-          } else {
-            gun.get(identity.address).once(function(_node) {
-              try {
-                node.presentation = _node.presentation;
-                node.revision = _node.revision;
-                node.successor = _node.successor;
-                node.ancestor = _node.ancestor;
-                node.identity = identity;
-                resolve(node);
-              } catch(e) {
-                node.presentation = "";
-                node.revision = identity.address;
-                node.successor = _getRandomAddress();
-                node.ancestor = null;
-                resolve(node);
-              }
-            });
-          }
-        }
-      });
-    });
-  }
-
     const provider = new ethers.providers.JsonRpcProvider(config.rpcUrl);
     const wallet = new ethers.Wallet(privateKey,provider);
     const singingKey = new ethers.utils.SigningKey(privateKey);
-    let _gunOpts = {peers:[],radisk:false};
 
-    if((typeof _peers !== 'undefined') && (_peers !== null)) {
-      for(let i=0;i<_peers.length;i++) {
-        config.gunPeers.push(_peers[i]);
-      }
-    }
-    _gunOpts = {};
-
-    if((typeof _listenServerPort !== 'undefined') && ( _listenServerPort !== null)) {
+    if((typeof config.httpport !== 'undefined') && ( config.httpport !== null)) {
+      const path = require('path');
       const server = require('http').createServer(function(req,res) {
-        if(req.url.length == 43) {
-            retrievePresentation(req.url.substr(1,42)).then(function(data) {
-              res.writeHead(200, {'Content-Type': 'text/json'});
-              res.write(JSON.stringify(data))
-              res.end();
-            });
+        res.writeHead(200, {'Content-Type': 'text/json'});
+        const address = path.basename(req.url);
+        const dirname = path.dirname(req.url);
+        if(dirname == '/did') {
+          retrieveDID(address).then(function(data) {
+            res.writeHead(200, {'Content-Type': 'text/json'});
+            res.write(JSON.stringify(data))
+            res.end();
+          });
+        } else
+        if((dirname == '/presentation')||(dirname == '/payload')) {
+          retrievePresentation(address).then(function(data) {
+            res.writeHead(200, {'Content-Type': 'text/json'});
+            res.write(JSON.stringify(data))
+            res.end();
+          });
+        } else
+        if(dirname == '/jwt') {
+          retrieveDID(address).then(function(data) {
+            res.writeHead(200, {'Content-Type': 'text/plain'});
+            if(data !== null) {
+              res.write(JSON.stringify(data.jwt))
+            }
+            res.end();
+          });
+        } else {
+          res.writeHead(404, {'Content-Type': 'text/plain'});
+          res.end();
         }
-      }).listen(_listenServerPort);
-      _gunOpts.web = server;
+      }).listen(config.httpport);
     }
-    _gunOpts.file ="radata_"+wallet.address+"_"+new Date().getTime();
 
-    if((typeof gun == 'undefined') || (gun == null)) {
-      const Gun = require('gun');
-      require('gun/lib/load.js');
-      gun = Gun(_gunOpts);
-      if(typeof gun.user == 'undefined') {
-        if(typeof SEA !== 'undefined') {
-          gun.user = SEA.GUN.User;
-        }
-      }
+    let hub = signalhub(config.signalKingdom, config.signalDispatcher);
+
+    if((typeof swarm == 'undefined') || (swarm == null)) {
+        const webrtcswarm = require('webrtc-swarm');
+        swarm = webrtcswarm(hub, {
+          wrtc: require('wrtc'),
+          uuid:wallet.address
+        })
     }
-    const user = gun.user();
+
     const emitter = new Events();
     const parent = this;
 
@@ -187,27 +149,28 @@ const TydidsP2P = {
       id:"did:ethr:6226:"+keys.address
     };
 
-    // Dummy Login
-    await loginUserGun(wallet.address,privateKey);
-    let peers = [];
-    function shuffle(a) {
-        for (let i = a.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [a[i], a[j]] = [a[j], a[i]];
-        }
-        return a;
-    }
-    config.gunPeers = shuffle(config.gunPeers);
-    for(let i=0;(i<config.gunPeers.length)&&(i<2);i++) {
-      peers.push(config.gunPeers[i]+'gun');
-    }
-    gun.opt({peers:peers});
-    keys.gun = gun.user().is;
-    identity.gunPublicKey = keys.gun.pub;
-    identity.gunEPublicKey = keys.gun.epub;
     node.identity = identity;
 
+    swarm.on('peer', function (peer, id) {
+      try {
+        peer.send(JSON.stringify(identity));
+        emitter.emit("mesh",swarm.peers.length);
+        emitter.emit("p2p-connect",id);
+        peer.on('data', data => {
+            data = data.toString();
+            // If requested handle
+            if(data == 'present') {
+             _updateGraph();
+            }
+            //console.log("Handle Control Message",id,data);
+        });
+      } catch(e) {}
+    })
 
+    swarm.on('disconnect', function (peer, id) {
+        emitter.emit("mesh",swarm.peers.length);
+        emitter.emit("p2p-disconnect",id);
+    })
     // Internal Management
 
     let stats = {
@@ -259,67 +222,27 @@ const TydidsP2P = {
         }
 
     }
+    let lastGraphUpdate = 0;
 
     const _updateGraph = async function() {
-      gun.get(identity.address).put(node);
-      gun.get(identity.address).get(node.revision).put(node);
-      gun.get(node.revision).put(node);
-      gun.get("relay").get(identity.address).put(node);
-      gun.get("relay").get(node.revision).put(node);
-      await sleep(200);
-      function shuffle(a) {
-          for (let i = a.length - 1; i > 0; i--) {
-              const j = Math.floor(Math.random() * (i + 1));
-              [a[i], a[j]] = [a[j], a[i]];
-          }
-          return a;
-      }
-      config.gunPeers = shuffle(config.gunPeers)
-      for(let i=0;((i<config.gunPeers.length)&&(i<3));i++) {
-        try {
-          https.get(config.gunPeers[i]+'json/'+identity.address,function(res) {});
-          await sleep(100);
-        } catch(e) {
-        }
+      if(lastGraphUpdate<new Date().getTime()-5000) {
+        lastGraphUpdate = new Date().getTime()
+        hub.broadcast(identity.address,node);
       }
     }
 
     const _inGraphRetrieveOnce = async function(address,_revision,_wait) {
       return new Promise(async function(resolve, reject) {
-        let option = null;
-        if((typeof _wait !== 'undefined') && (_wait !== null)) {
-          option = { wait:_wait};
-        } else {
-          option = { wait:_RETRIEVEWAIT};
-        }
-          if((typeof _revision == 'undefined') || (_revision == null)) {
-            gun.get(address).once(function(_node) {
-              resolve(_node);
-            },option);
-          } else {
-            gun.get(address).get(_revision).once(function(_node) {
-                resolve(_node);
-            },option);
-            gun.get(_revision).once(function(_node) {
-                resolve(_node);
-            },option);
-          }
+        hub.broadcast(address,{present:identity.address});
+        hub.subscribe(address)
+          .on('data', function (message) {
+            resolve(message);
+          })
       });
     }
     const _inGraphLoad = async function(address,rn) {
       return new Promise(async function(resolve, reject) {
-            let resolved = false;
-            if((typeof rn == 'undefined') || (rn == null)) rn = gun.get(address);
-            rn.load(async function(_node) {
-              for (const [key, value] of Object.entries(_node)) {
-                _node[key] = await _inGraphLoad(address,rn.get(key));
-              }
-              resolved = true;
-              resolve(_node);
-            });
-            setTimeout(function() {
-              if(!resolved) resolve({});
-            },5000);
+            reject("Not Implemented");
       });
     }
 
@@ -371,21 +294,17 @@ const TydidsP2P = {
         emitter.emit("jwt:ethr:6226:"+node.revision,node.presentation);
         const _revision = '' + node.ancestor;
         if(typeof _cbRcvdACK == 'function') {
-            gun.get(_revision).get('ack').on(function(ack) {
-                gun.get(_revision).get('ack').map(async function(_node,from) {
-                  if(typeof _subs[_node.revision+':'+from] == 'undefined') {
-                    _subs[_node.revision+':'+from] = new Date().getTime();
-                    let did = await _resolveDid(_node.did);
-                    if(did.issuer == 'did:ethr:6226:'+from) {
-                      _subs[_node.revision+':'+from] = await _cbRcvdACK(from,did,did.payload._reference);
-                    }
-                  }
-                });
-                gun.get(_revision).get('ack').off();
-            });
-            setTimeout(function() {
-              gun.get(_revision).get('ack').off();
-            },_WAITACK);
+            hub.subscribe(_revision)
+            .on('data', async function (message) {
+              let from = '';
+              if(typeof _subs[_node.revision+':'+from] == 'undefined') {
+                _subs[_node.revision+':'+from] = new Date().getTime();
+                let did = await _resolveDid(_node.did);
+                if(did.issuer == 'did:ethr:6226:'+from) {
+                  _subs[_node.revision+':'+from] = await _cbRcvdACK(from,did,did.payload._reference);
+                }
+              }
+            })
         }
         return node;
     }
@@ -397,46 +316,17 @@ const TydidsP2P = {
         if(_presentation.issuer == 'did:ethr:6226:'+address) {
           return _presentation;
         } else {
-          return null;
+          return {err:'Different Issuer'};
         }
       } else {
-        return null;
+        await sleep(100);
+        return await retrieveDID(address,_revision);
       }
     }
 
     const retrieveRevisions = async function(address,_wait,_noresolve) {
-      if((typeof _wait == 'undefined')||(_wait == null)) _wait = _WAITACK;
-      let history = [];
-      let startTime = new Date().getTime();
-      let _revision = null;
-
-      const _innerRetrieve = async function(obj) {
-          if(typeof obj.presentation !== 'undefined') {
-            history.push(obj);
-          } else {
-            for (const [key, value] of Object.entries(obj)) {
-              if(key.length == 42) {
-                  await _innerRetrieve(value);
-              }
-            }
-          }
-      }
-      const latest = await _inGraphLoad(address);
-      for (const [key, value] of Object.entries(latest)) {
-          if(key.length == 42) {
-              await _innerRetrieve(value);
-          }
-      }
-      for(let i=0;i<history.length;i++) {
-        if((typeof history[i] !== 'undefined')&&(typeof history[i].presentation !== 'undefined')) {
-          if((typeof _noresolve == 'undefined' )||(_noresolve == null)) {
-            history[i].did = await _resolveDid(history[i].presentation);
-          } else {
-            history[i].did = jsontokens.decodeToken(history[i].presentation);
-          }
-        }
-      }
-      return history;
+      throw new Error("Not implemented");
+      return [];
     }
 
     /**
@@ -470,21 +360,18 @@ const TydidsP2P = {
                   _did = await _cbACK(_p);
                 }
                 if(typeof _did !== 'undefined') {
-                  _did._reference = _p.payload._revision;
                   const ack = await _buildJWTDid(_did); // here we might add a Reply Callback!
-                  gun.get(_p.payload._revision).get('ack').get(identity.address).put({did:ack});
+                  // hub.broadcast(_revision,ack);
                 }
               }
             }
           }
         }
         _subs[hash] = Math.round(new Date().getTime()/1000);
-        gun.get(address).on(function(_node) {
+        hub.subscribe(address)
+          .on('data', function (_node) {
             fireEvent(_node);
-        });
-        gun.get(address).get(_revision).on(function(_node) {
-            fireEvent(_node);
-        });
+          })
       }
       const _presentation = await retrieveDID(address,_revision);
       if((typeof _presentation !== 'undefined') && (_presentation !== null) && (typeof _presentation.payload !== 'undefined')) {
@@ -548,16 +435,22 @@ const TydidsP2P = {
      identity.address = address;
    }
 
-    retrievePresentation();
+    //retrievePresentation();
 
-    if(doReset) {
-      await updatePresentation({});
-    }
+    await updatePresentation({});
+
+    let subscribers =0;
+
+    hub.subscribe(identity.address)
+      .on('data', function (_req) {
+        if(typeof _req.present !== 'undefined') {
+            _updateGraph();
+        }
+    });
 
     return {
       wallet: wallet,
       identity: identity,
-      gun:gun,
       emitter:emitter,
       stats:stats,
       updatePresentation:updatePresentation,
@@ -574,7 +467,9 @@ const TydidsP2P = {
       setIdentifier:setIdentifier,
       node:node,
       setIDRole:setIDRole,
-      getIDRole:getIDRole
+      getIDRole:getIDRole,
+      subscribers:hub.subscribers.length,
+      swarm:swarm.peers.length
     }
   }
 }

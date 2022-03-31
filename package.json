@@ -1,6 +1,6 @@
 {
   "name": "tydids-p2p",
-  "version": "1.2.8",
+  "version": "1.2.99build14",
   "description": "A consensus driven decentralized data governance framework.",
   "main": "./TydidsP2P.js",
   "bin": {
@@ -10,6 +10,11 @@
     "cli": "node cli.js",
     "test": "mocha",
     "build": "webpack -c ./webpack.config.js"
+  },
+  "binary": {
+        "module_name": "tydids-p2p",
+        "module_path": "./lib/binding/",
+        "host": "https://tydids-p2p.s3-us-west-1.amazonaws.com"
   },
   "repository": {
     "type": "git",
@@ -34,6 +39,7 @@
   },
   "homepage": "https://github.com/energychain/tydids-p2p#readme",
   "dependencies": {
+    "@mapbox/node-pre-gyp": "1.0.9",
     "@peculiar/webcrypto": "^1.2.3",
     "commander": "^9.0.0",
     "crypto-browserify": "^3.12.0",
@@ -42,14 +48,17 @@
     "ethers": "^5.5.4",
     "ethr-did": "^2.2.0",
     "ethr-did-resolver": "^5.0.4",
-    "gun": "^0.2020.1236",
     "http-browserify": "^1.7.0",
     "https-browserify": "^1.0.0",
     "jsontokens": "^3.0.0",
+    "signalhub": "^4.9.0",
     "stream-browserify": "^3.0.0",
-    "webpack": "^5.69.0"
+    "webpack": "^5.69.0",
+    "webrtc-swarm": "^2.9.0",
+    "wrtc": "^0.4.7"
   },
   "devDependencies": {
+    "aws-sdk": "^2.1104.0",
     "axios": "^0.26.1",
     "browserify": "^17.0.0",
     "mocha": "^9.2.2",

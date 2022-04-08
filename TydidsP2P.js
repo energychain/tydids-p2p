@@ -153,7 +153,7 @@ const TydidsP2P = {
 
     swarm.on('peer', function (peer, id) {
       try {
-        peer.send(JSON.stringify(identity));
+      //  peer.send(JSON.stringify(identity)); Removed for better performance
         emitter.emit("mesh",swarm.peers.length);
         emitter.emit("p2p-connect",id);
         peer.on('data', data => {

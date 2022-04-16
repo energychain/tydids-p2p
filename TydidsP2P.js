@@ -157,6 +157,7 @@ const TydidsP2P = {
         emitter.emit("mesh",swarm.peers.length);
         emitter.emit("p2p-connect",id);
         peer.on('data', data => {
+
             data = data.toString();
             // If requested handle
             if(data == 'present') {
@@ -225,7 +226,7 @@ const TydidsP2P = {
     let lastGraphUpdate = 0;
 
     const _updateGraph = async function() {
-      if(lastGraphUpdate<new Date().getTime()-5000) {
+      if(lastGraphUpdate<new Date().getTime()-20000) {
         lastGraphUpdate = new Date().getTime()
         hub.broadcast(identity.address,node);
       }
@@ -233,7 +234,7 @@ const TydidsP2P = {
 
     const _inGraphRetrieveOnce = async function(address,_revision,_wait) {
       return new Promise(async function(resolve, reject) {
-        hub.broadcast(address,{present:identity.address});
+      //  hub.broadcast(address,{present:identity.address});
         hub.subscribe(address)
           .on('data', function (message) {
             resolve(message);
